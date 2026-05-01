@@ -24,7 +24,6 @@ export const useSkillsStore = defineStore("skills", () => {
 
   // Computed
   const currentSkills = computed<SkillInfo[]>(() => {
-    const store = useSettingsStore();
     const skillsMap =
       currentScope.value === "global" ? globalSkills.value : projectSkills.value;
     const result = skillsMap.get(currentAgentId.value);
