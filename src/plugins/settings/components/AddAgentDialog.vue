@@ -3,7 +3,6 @@ import { ref } from "vue";
 import {
   NModal, NCard, NForm, NFormItem, NInput, NButton, NSpace, useMessage,
 } from "naive-ui";
-import { open } from "@tauri-apps/plugin-dialog";
 import { useI18n } from "vue-i18n";
 import type { AgentConfig } from "../types";
 
@@ -19,11 +18,6 @@ const message = useMessage();
 const name = ref("");
 const agentType = ref("");
 const basePath = ref("");
-
-async function browsePath() {
-  const selected = await open({ directory: true, multiple: false });
-  if (selected) basePath.value = selected;
-}
 
 function handleSubmit() {
   if (!name.value.trim()) { message.warning(t("settings.agents.nameRequired")); return; }
@@ -67,10 +61,7 @@ function handleSubmit() {
           <NInput v-model:value="agentType" placeholder="my-agent" />
         </NFormItem>
         <NFormItem :label="t('settings.agents.basePath')">
-          <NSpace style="width: 100%">
-            <NInput v-model:value="basePath" style="flex: 1" />
-            <NButton @click="browsePath">{{ t("settings.agents.browse") }}</NButton>
-          </NSpace>
+          <NInput v-model:value="basePath" />
         </NFormItem>
       </NForm>
       <template #footer>

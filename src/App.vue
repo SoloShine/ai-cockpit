@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { NConfigProvider, darkTheme, zhCN, dateZhCN, enUS, dateEnUS, useOsTheme } from "naive-ui";
+import { NConfigProvider, NMessageProvider, NDialogProvider, darkTheme, zhCN, dateZhCN, enUS, dateEnUS, useOsTheme } from "naive-ui";
 import AppLayout from "@/core/layout/AppLayout.vue";
 import { useSettingsStore } from "@/plugins/settings/store";
 
@@ -25,6 +25,10 @@ const naiveDateLocale = computed(() => localeMap[settingsStore.appearance.langua
 
 <template>
   <NConfigProvider :theme="theme" :locale="naiveLocale" :date-locale="naiveDateLocale">
-    <AppLayout />
+    <NMessageProvider>
+      <NDialogProvider>
+        <AppLayout />
+      </NDialogProvider>
+    </NMessageProvider>
   </NConfigProvider>
 </template>

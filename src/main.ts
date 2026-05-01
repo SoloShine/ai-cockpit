@@ -41,4 +41,9 @@ async function bootstrap() {
   app.mount("#app");
 }
 
-bootstrap();
+bootstrap().catch((e) => {
+  console.error("[AI Cockpit] 启动失败:", e);
+  // 降级：即使 onInit 失败也要挂载应用
+  const el = document.getElementById("app");
+  if (el) el.textContent = "应用启动失败，请查看控制台日志";
+});

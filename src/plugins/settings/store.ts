@@ -12,11 +12,11 @@ const DEFAULT_APPEARANCE: AppearanceSettings = {
 };
 
 const DEFAULT_AGENTS: AgentConfig[] = [
-  { id: "claude-code", name: "Claude Code", type: "claude-code", basePath: ".claude/commands", enabled: true, isCustom: false },
-  { id: "cursor", name: "Cursor", type: "cursor", basePath: ".cursor/commands", enabled: true, isCustom: false },
-  { id: "windsurf", name: "Windsurf", type: "windsurf", basePath: ".windsurf/commands", enabled: true, isCustom: false },
-  { id: "opencode", name: "OpenCode", type: "opencode", basePath: ".opencode/commands", enabled: true, isCustom: false },
-  { id: "codex", name: "Codex", type: "codex", basePath: ".codex/commands", enabled: true, isCustom: false },
+  { id: "claude-code", name: "Claude Code", type: "claude-code", basePath: ".claude", enabled: true, isCustom: false },
+  { id: "cursor", name: "Cursor", type: "cursor", basePath: ".cursor", enabled: true, isCustom: false },
+  { id: "windsurf", name: "Windsurf", type: "windsurf", basePath: ".windsurf", enabled: true, isCustom: false },
+  { id: "opencode", name: "OpenCode", type: "opencode", basePath: ".config/opencode", enabled: true, isCustom: false },
+  { id: "codex", name: "Codex", type: "codex", basePath: ".codex", enabled: true, isCustom: false },
 ];
 
 const DEFAULT_PLUGINS: PluginSettings = {

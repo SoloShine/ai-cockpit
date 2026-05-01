@@ -7,19 +7,24 @@ import { useI18n } from "vue-i18n";
 const { t } = useI18n();
 const message = useMessage();
 
-const version = ref("");
-const dataDir = ref("");
+const version = ref("loading...");
+const dataDir = ref("loading...");
 
 onMounted(async () => {
-  version.value = await invoke<string>("get_app_version");
-  dataDir.value = await invoke<string>("get_data_dir");
+  try {
+    version.value = await invoke<string>("get_app_version");
+    dataDir.value = await invoke<string>("get_data_dir");
+  } catch (e) {
+    version.value = "error: " + String(e);
+    dataDir.value = "error";
+  }
 });
 
 async function openDataDir() {
   try {
     await invoke("open_in_explorer", { path: dataDir.value });
   } catch (e) {
-    message.error("无法打开目录: " + e);
+    message.error("无法打开目录: " + String(e));
   }
 }
 
