@@ -215,6 +215,7 @@ src-tauri/src/
 
 ## 关键约定
 
+- **语言偏好**：所有回复和输出使用中文
 - 路径别名：`@` → `src/`
 - 插件之间通过 Pinia store 或事件总线通信，禁止直接 import 另一个插件的内部组件
 - 所有 Rust 命令返回 `Result<T, String>`
