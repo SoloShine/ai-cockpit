@@ -8,6 +8,9 @@ import { usePluginStore } from "./stores/plugin";
 import i18n from "./core/i18n";
 
 // Import and register built-in plugins here
+import settingsModule from "./plugins/settings";
+pluginRegistry.register(settingsModule);
+
 // import skillsPlugin from "./plugins/skills";
 // import promptsPlugin from "./plugins/prompts";
 // import devtoolsPlugin from "./plugins/devtools";
