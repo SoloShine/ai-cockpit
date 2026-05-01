@@ -14,7 +14,6 @@ const router = createRouter({
       component: () => import("@/views/WelcomeView.vue"),
       meta: { title: "AI Cockpit" },
     },
-    ...pluginRegistry.getRoutes(),
   ],
 });
 

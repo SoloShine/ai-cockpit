@@ -8,7 +8,6 @@ import type { MenuOption } from "naive-ui";
 import type { Component } from "vue";
 import {
   RocketOutline,
-  SettingsOutline,
 } from "@vicons/ionicons5";
 
 const router = useRouter();
@@ -47,29 +46,8 @@ const pluginMenuOptions = computed<MenuOption[]>(() =>
   })
 );
 
-const fixedMenuOptions: MenuOption[] = [
-  {
-    type: "divider",
-    key: "d-settings",
-  },
-  {
-    label: "设置",
-    key: "settings",
-    icon: () => h(NIcon, null, { default: () => h(SettingsOutline) }),
-  },
-];
-
-const allMenuOptions = computed(() => [
-  ...pluginMenuOptions.value,
-  ...fixedMenuOptions,
-]);
-
 function handleMenuUpdate(key: string) {
-  if (key === "settings") {
-    router.push({ name: "settings" });
-  } else {
-    router.push({ name: key });
-  }
+  router.push({ name: key });
 }
 
 // Compute active key from current route
@@ -92,7 +70,7 @@ const activeKey = computed(() => {
     </div>
     <NDivider style="margin: 8px 0" />
     <NMenu
-      :options="allMenuOptions"
+      :options="pluginMenuOptions"
       :value="activeKey"
       @update:value="handleMenuUpdate"
     />

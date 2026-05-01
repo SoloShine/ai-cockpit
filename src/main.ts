@@ -19,6 +19,11 @@ pluginRegistry.register(settingsModule);
 // pluginRegistry.register(promptsPlugin);
 // pluginRegistry.register(devtoolsPlugin);
 
+// 插件注册后，动态添加路由（因为 router 在 import 时创建，那时插件还没注册）
+for (const route of pluginRegistry.getRoutes()) {
+  router.addRoute(route);
+}
+
 const app = createApp(App);
 const pinia = createPinia();
 
