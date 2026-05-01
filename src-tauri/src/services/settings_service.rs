@@ -19,9 +19,20 @@ pub struct AgentConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RepoConfig {
+    pub id: String,
+    pub name: String,
+    pub url: String,
+    pub cache_path: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppSettings {
     pub appearance: AppearanceSettings,
     pub agents: Vec<AgentConfig>,
+    pub repos: Vec<RepoConfig>,
     pub plugins: PluginSettings,
     #[serde(rename = "_meta")]
     pub meta: MetaSettings,
@@ -128,8 +139,8 @@ pub fn default_agents() -> Vec<AgentConfig> {
             id: "aider".into(),
             name: "Aider".into(),
             agent_type: "aider".into(),
-            global_path: ".aider.conf.yml".into(),
-            project_path: ".aider.conf.yml".into(),
+            global_path: ".aider".into(),
+            project_path: ".aider".into(),
             enabled: true,
             is_custom: false,
         },
@@ -137,7 +148,7 @@ pub fn default_agents() -> Vec<AgentConfig> {
             id: "copilot".into(),
             name: "GitHub Copilot".into(),
             agent_type: "copilot".into(),
-            global_path: "".into(),
+            global_path: "github/copilot".into(),
             project_path: ".github".into(),
             enabled: true,
             is_custom: false,
@@ -146,7 +157,7 @@ pub fn default_agents() -> Vec<AgentConfig> {
             id: "trae".into(),
             name: "Trae".into(),
             agent_type: "trae".into(),
-            global_path: "".into(),
+            global_path: ".trae".into(),
             project_path: ".trae".into(),
             enabled: true,
             is_custom: false,
@@ -162,6 +173,7 @@ pub fn default_settings() -> AppSettings {
             font_size: 14,
         },
         agents: default_agents(),
+        repos: vec![],
         plugins: PluginSettings {
             disabled_ids: vec![],
             order: vec![],
@@ -189,8 +201,25 @@ pub fn load_settings(app: &tauri::AppHandle) -> Result<AppSettings, String> {
     }
     let content = fs::read_to_string(&path)
         .map_err(|e| format!("无法读取设置文件: {}", e))?;
-    let settings: AppSettings = serde_json::from_str(&content)
+    let mut settings: AppSettings = serde_json::from_str(&content)
         .map_err(|e| format!("无法解析设置文件: {}", e))?;
+
+    // Migration: strip stale "/skills" suffix — settings now store the agent base dir
+    let mut dirty = false;
+    for agent in &mut settings.agents {
+        if agent.global_path.ends_with("/skills") {
+            agent.global_path = agent.global_path.trim_end_matches("/skills").to_string();
+            dirty = true;
+        }
+        if agent.project_path.ends_with("/skills") {
+            agent.project_path = agent.project_path.trim_end_matches("/skills").to_string();
+            dirty = true;
+        }
+    }
+    if dirty {
+        let _ = save_settings(app, &settings);
+    }
+
     Ok(settings)
 }
 

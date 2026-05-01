@@ -1,0 +1,76 @@
+{
+  "skills": {
+    "title": "Skill 管理",
+    "scope": {
+      "global": "全局 Skills",
+      "project": "项目 Skills"
+    },
+    "agent": {
+      "select": "选择 Agent",
+      "current": "当前 Agent"
+    },
+    "actions": {
+      "install": "安装",
+      "update": "更新",
+      "uninstall": "卸载",
+      "batch": "批量操作",
+      "detail": "详情"
+    },
+    "status": {
+      "empty": "暂无 Skills",
+      "emptyHint": "当前 Agent 目录下未发现 Skill 文件",
+      "loading": "正在扫描...",
+      "error": "扫描失败",
+      "selected": "已选择 {count} 个",
+      "total": "共 {count} 个 Skills"
+    },
+    "card": {
+      "files": "{count} 个文件",
+      "noMeta": "无元信息",
+      "hash": "哈希"
+    },
+    "empty": {
+      "noPath": "路径未配置",
+      "noPathHint": "请前往设置页面配置当前 Agent 的 Skill 路径",
+      "goSettings": "前往设置",
+      "noSkills": "暂无 Skills",
+      "noSkillsHint": "当前目录下未发现 Skill 文件",
+      "scanError": "扫描出错",
+      "retry": "重试"
+    },
+    "detail": {
+      "title": "Skill 详情",
+      "files": "文件列表",
+      "size": "大小",
+      "path": "路径"
+    },
+    "project": {
+      "selectProject": "选择项目",
+      "addProject": "添加项目",
+      "noProjects": "暂无项目，点击上方按钮添加"
+    },
+    "repos": {
+      "title": "Skill 仓库",
+      "addRepo": "添加仓库",
+      "name": "仓库名称",
+      "url": "Git 仓库地址",
+      "cachePath": "本地缓存路径",
+      "enabled": "已启用",
+      "disabled": "已禁用",
+      "noRepos": "暂无仓库，点击上方按钮添加",
+      "nameRequired": "请输入仓库名称",
+      "urlRequired": "请输入仓库地址",
+      "addSuccess": "仓库添加成功",
+      "deleteSuccess": "仓库已删除",
+      "deleteConfirm": "确定要删除此仓库吗？",
+      "cancel": "取消",
+      "delete": "删除"
+    },
+    "confirm": {
+      "uninstall": "确认卸载",
+      "uninstallMsg": "确定要卸载 Skill \"{name}\" 吗？此操作不可恢复。",
+      "batchUninstall": "确认批量卸载",
+      "batchUninstallMsg": "确定要卸载选中的 {count} 个 Skill 吗？"
+    }
+  }
+}
