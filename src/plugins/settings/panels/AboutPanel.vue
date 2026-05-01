@@ -3,9 +3,11 @@ import { ref, onMounted } from "vue";
 import { NDescriptions, NDescriptionsItem, NButton, NSpace, NText, NTag, useMessage } from "naive-ui";
 import { invoke } from "@tauri-apps/api/core";
 import { useI18n } from "vue-i18n";
+import { useSettingsStore } from "../store";
 
 const { t } = useI18n();
 const message = useMessage();
+const store = useSettingsStore();
 
 const version = ref("loading...");
 const dataDir = ref("loading...");
@@ -24,7 +26,7 @@ async function openDataDir() {
   try {
     await invoke("open_in_explorer", { path: dataDir.value });
   } catch (e) {
-    message.error("无法打开目录: " + String(e));
+    message.error("Cannot open directory: " + String(e));
   }
 }
 
@@ -33,7 +35,41 @@ async function openLogs() {
 }
 
 function checkUpdates() {
-  message.info("检查更新功能将在后续版本中实现");
+  message.info("Check for updates will be available in a future version");
+}
+
+async function handleExport() {
+  try {
+    const json = await store.exportConfig();
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ai-cockpit-settings.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    message.success("Config exported");
+  } catch (e) {
+    message.error("Export failed: " + String(e));
+  }
+}
+
+async function handleImport() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const json = await file.text();
+      await store.importConfig(json);
+      message.success("Config imported");
+    } catch (e) {
+      message.error("Import failed: " + String(e));
+    }
+  };
+  input.click();
 }
 </script>
 
@@ -65,6 +101,8 @@ function checkUpdates() {
     <NSpace style="margin-top: 16px">
       <NButton @click="checkUpdates">{{ t("settings.about.checkUpdates") }}</NButton>
       <NButton @click="openLogs">{{ t("settings.about.openLogs") }}</NButton>
+      <NButton type="primary" ghost @click="handleExport">Export Config</NButton>
+      <NButton ghost @click="handleImport">Import Config</NButton>
     </NSpace>
   </div>
 </template>

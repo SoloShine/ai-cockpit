@@ -64,6 +64,159 @@ pub fn scan_skills(
     })
 }
 
+/// Scan a remote repo for skills with two-strategy approach:
+/// 1. Try parsing skills.json manifest first
+/// 2. Fallback: scan root-level dirs + skills/ subdirectory for SKILL.md
+pub fn scan_remote_skills(
+    repo_path: &str,
+    repo_id: &str,
+) -> Result<ScanResult, String> {
+    let base = Path::new(repo_path);
+    if !base.exists() {
+        return Ok(ScanResult {
+            agent_id: repo_id.to_string(),
+            scope: SkillScope::Global,
+            skills: Vec::new(),
+            total: 0,
+        });
+    }
+
+    // Strategy 1: Try skills.json manifest
+    let manifest_path = base.join("skills.json");
+    if manifest_path.exists() {
+        if let Ok(content) = std::fs::read_to_string(&manifest_path) {
+            if let Ok(manifest) = serde_json::from_str::<serde_json::Value>(&content) {
+                if let Some(skills_list) = manifest.get("skills").and_then(|v| v.as_array()) {
+                    let mut skills = Vec::new();
+                    for entry in skills_list {
+                        let skill_name = entry.get("name")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                        let skill_path = entry.get("path")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
+
+                        if skill_name.is_empty() {
+                            continue;
+                        }
+
+                        let full_path = base.join(&skill_path);
+                        let is_file = full_path.is_file();
+
+                        let meta = if full_path.is_dir() {
+                            let skill_md = full_path.join("SKILL.md");
+                            if skill_md.exists() {
+                                parse_skill_meta(&skill_md).ok().flatten()
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        };
+
+                        let (file_count, size_bytes, content_hash) = if full_path.exists() {
+                            let mut fc = 0u64;
+                            let mut sz = 0u64;
+                            let mut hi = String::new();
+                            if full_path.is_dir() {
+                                let _ = collect_dir_stats(&full_path, &mut fc, &mut sz, &mut hi);
+                            } else if full_path.is_file() {
+                                if let Ok(content) = std::fs::read(&full_path) {
+                                    fc = 1;
+                                    sz = content.len() as u64;
+                                    hi = calculate_hash(&content);
+                                }
+                            }
+                            (fc, sz, calculate_hash(hi.as_bytes()))
+                        } else {
+                            (0, 0, String::new())
+                        };
+
+                        skills.push(SkillInfo {
+                            name: skill_name,
+                            path: full_path.to_string_lossy().to_string(),
+                            is_file,
+                            has_skill_md: full_path.join("SKILL.md").exists(),
+                            meta,
+                            file_count,
+                            size_bytes,
+                            content_hash,
+                            last_modified: get_modified_time(&full_path),
+                            source_agent_id: Some(repo_id.to_string()),
+                        });
+                    }
+                    let total = skills.len() as u64;
+                    return Ok(ScanResult {
+                        agent_id: repo_id.to_string(),
+                        scope: SkillScope::Global,
+                        skills,
+                        total,
+                    });
+                }
+            }
+        }
+    }
+
+    // Strategy 2: Scan directories for SKILL.md (root level + skills/ subdirectory)
+    let mut scan_dirs: Vec<std::path::PathBuf> = Vec::new();
+
+    // Root level subdirectories (skip "skills" itself to avoid double counting)
+    if let Ok(rd) = std::fs::read_dir(base) {
+        for e in rd.flatten() {
+            let p = e.path();
+            if p.is_dir() {
+                if let Some(name) = e.file_name().to_str() {
+                    if !name.starts_with('.') && name != "skills" {
+                        scan_dirs.push(p);
+                    }
+                }
+            }
+        }
+    }
+
+    // skills/ subdirectory contents (e.g. anthropics/skills repo pattern)
+    let skills_subdir = base.join("skills");
+    if skills_subdir.is_dir() {
+        if let Ok(rd) = std::fs::read_dir(&skills_subdir) {
+            for e in rd.flatten() {
+                let p = e.path();
+                if p.is_dir() {
+                    if let Some(name) = e.file_name().to_str() {
+                        if !name.starts_with('.') {
+                            scan_dirs.push(p);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let mut skills = Vec::new();
+    for dir in &scan_dirs {
+        let skill_md = dir.join("SKILL.md");
+        if !skill_md.exists() {
+            continue;
+        }
+
+        let name = dir
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default();
+
+        skills.push(build_dir_skill_info(dir, &name, repo_id)?);
+    }
+
+    let total = skills.len() as u64;
+    Ok(ScanResult {
+        agent_id: repo_id.to_string(),
+        scope: SkillScope::Global,
+        skills,
+        total,
+    })
+}
+
 /// Calculate SHA256 hash of content
 pub fn calculate_hash(content: &[u8]) -> String {
     let mut hasher = Sha256::new();

@@ -38,6 +38,10 @@ export const useSettingsStore = defineStore("settings", () => {
   const repos = ref<RepoConfig[]>([...DEFAULT_REPOS]);
   const plugins = ref<PluginSettings>({ ...DEFAULT_PLUGINS });
 
+  // Git Sync state
+  const syncResults = ref<import('@/plugins/skills/types').SyncResult[]>([]);
+  const syncing = ref(false);
+
   let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
   async function load() {
@@ -141,6 +145,63 @@ export const useSettingsStore = defineStore("settings", () => {
     }
   }
 
+  // --- Git Sync ---
+
+  async function syncAllRepos(): Promise<import('@/plugins/skills/types').SyncResult[]> {
+    syncing.value = true;
+    try {
+      const results = await invoke<import('@/plugins/skills/types').SyncResult[]>("sync_all_repos", {
+        repos: repos.value,
+      });
+      syncResults.value = results;
+
+      // Update cache paths for repos that don't have one yet
+      for (const result of results) {
+        if (result.success) {
+          const repo = repos.value.find((r) => r.id === result.repoId);
+          if (repo && !repo.cachePath) {
+            updateRepo(repo.id, {
+              cachePath: `repos/${repo.id}`,
+            });
+          }
+        }
+      }
+      return results;
+    } finally {
+      syncing.value = false;
+    }
+  }
+
+  async function getRemoteSkills(repoId: string): Promise<import('@/plugins/skills/types').RemoteSkillInfo[]> {
+    const repo = repos.value.find((r) => r.id === repoId);
+    if (!repo) return [];
+    return invoke<import('@/plugins/skills/types').RemoteSkillInfo[]>("get_remote_skills", {
+      repoId,
+      cachePath: repo.cachePath,
+    });
+  }
+
+  // --- Config Portability ---
+
+  async function exportConfig(): Promise<string> {
+    const settings: AppSettings = {
+      appearance: appearance.value,
+      agents: agents.value,
+      repos: repos.value,
+      plugins: plugins.value,
+      _meta: { version: 1, updatedAt: new Date().toISOString() },
+    };
+    return invoke<string>("export_config", { settings });
+  }
+
+  async function importConfig(json: string): Promise<void> {
+    const settings = await invoke<AppSettings>("import_config", { json });
+    appearance.value = settings.appearance;
+    agents.value = settings.agents;
+    repos.value = settings.repos ?? [];
+    plugins.value = settings.plugins;
+  }
+
   return {
     loaded,
     appearance,
@@ -160,5 +221,13 @@ export const useSettingsStore = defineStore("settings", () => {
     updateRepo,
     togglePlugin,
     updatePluginOrder,
+    // Git Sync
+    syncResults,
+    syncing,
+    syncAllRepos,
+    getRemoteSkills,
+    // Config Portability
+    exportConfig,
+    importConfig,
   };
 });
