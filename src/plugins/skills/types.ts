@@ -58,3 +58,27 @@ export interface ProjectOverview {
   projectName: string;
   agentSkillsCount: Record<string, number>;
 }
+
+/** Result of syncing a single repository */
+export interface SyncResult {
+  repoId: string
+  success: boolean
+  message: string
+  skillCount: number
+}
+
+/** Summary of a skill in a remote repository */
+export interface RemoteSkillInfo {
+  name: string
+  description: string
+  version?: string
+  sourceRepo: string
+  skillType: 'file' | 'directory'
+}
+
+/** Detailed info about a remote skill */
+export interface RemoteSkillDetail {
+  info: RemoteSkillInfo
+  files: FileEntry[]
+  contentHash: string
+}

@@ -66,6 +66,15 @@
       "cancel": "取消",
       "delete": "删除"
     },
+    "sync": {
+      "syncAll": "同步所有仓库",
+      "syncing": "正在同步...",
+      "syncSuccess": "同步完成：{success} 成功，{fail} 失败",
+      "syncFail": "同步失败",
+      "lastSync": "上次同步：{time}",
+      "skillCount": "{count} 个 Skills",
+      "noReposToSync": "没有已启用的仓库可同步"
+    },
     "confirm": {
       "uninstall": "确认卸载",
       "uninstallMsg": "确定要卸载 Skill \"{name}\" 吗？此操作不可恢复。",

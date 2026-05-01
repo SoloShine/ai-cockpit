@@ -66,6 +66,15 @@
       "cancel": "Cancel",
       "delete": "Delete"
     },
+    "sync": {
+      "syncAll": "Sync All Repos",
+      "syncing": "Syncing...",
+      "syncSuccess": "Sync complete: {success} succeeded, {fail} failed",
+      "syncFail": "Sync failed",
+      "lastSync": "Last synced: {time}",
+      "skillCount": "{count} Skills",
+      "noReposToSync": "No enabled repos to sync"
+    },
     "confirm": {
       "uninstall": "Confirm Uninstall",
       "uninstallMsg": "Are you sure you want to uninstall skill \"{name}\"? This cannot be undone.",
