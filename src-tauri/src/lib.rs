@@ -9,8 +9,9 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
-            // Core commands
             commands::core::get_app_version,
+            commands::settings::load_settings,
+            commands::settings::save_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running AI Cockpit");
