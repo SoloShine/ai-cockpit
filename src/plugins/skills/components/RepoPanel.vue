@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import {
   NButton,
   NCard,
@@ -12,9 +12,10 @@ import {
   useMessage,
   NPopconfirm,
 } from "naive-ui";
-import { AddOutline } from "@vicons/ionicons5";
+import { AddOutline, SyncOutline } from "@vicons/ionicons5";
 import { useI18n } from "vue-i18n";
 import { useSettingsStore } from "@/plugins/settings/store";
+import type { SyncResult } from "@/plugins/skills/types";
 
 const { t } = useI18n();
 const store = useSettingsStore();
@@ -23,6 +24,32 @@ const message = useMessage();
 const showAddForm = ref(false);
 const newName = ref("");
 const newUrl = ref("");
+
+const syncing = computed(() => store.syncing);
+const syncResults = computed(() => store.syncResults);
+
+function getSyncResult(repoId: string): SyncResult | undefined {
+  return syncResults.value.find((r) => r.repoId === repoId);
+}
+
+async function handleSyncAll() {
+  if (store.repos.filter((r) => r.enabled).length === 0) {
+    message.info(t("skills.sync.noReposToSync"));
+    return;
+  }
+  try {
+    const results = await store.syncAllRepos();
+    const success = results.filter((r) => r.success).length;
+    const fail = results.filter((r) => !r.success).length;
+    if (fail > 0) {
+      message.warning(t("skills.sync.syncSuccess", { success, fail }));
+    } else {
+      message.success(t("skills.sync.syncSuccess", { success, fail: 0 }));
+    }
+  } catch (e) {
+    message.error(t("skills.sync.syncFail") + ": " + String(e));
+  }
+}
 
 function handleAdd() {
   if (!newName.value.trim()) {
@@ -33,11 +60,12 @@ function handleAdd() {
     message.warning(t("skills.repos.urlRequired"));
     return;
   }
+  const id = `repo_${Date.now()}`;
   store.addRepo({
-    id: `repo_${Date.now()}`,
+    id,
     name: newName.value.trim(),
     url: newUrl.value.trim(),
-    cachePath: "",
+    cachePath: `repos/${id}`,
     enabled: true,
   });
   newName.value = "";
@@ -56,10 +84,21 @@ function handleDelete(id: string) {
   <div>
     <NSpace justify="space-between" align="center" style="margin-bottom: 16px">
       <NText strong style="font-size: 16px">{{ t("skills.repos.title") }}</NText>
-      <NButton type="primary" @click="showAddForm = !showAddForm">
-        <template #icon><AddOutline /></template>
-        {{ t("skills.repos.addRepo") }}
-      </NButton>
+      <NSpace>
+        <NButton
+          type="primary"
+          ghost
+          :loading="syncing"
+          @click="handleSyncAll"
+        >
+          <template #icon><SyncOutline /></template>
+          {{ syncing ? t("skills.sync.syncing") : t("skills.sync.syncAll") }}
+        </NButton>
+        <NButton @click="showAddForm = !showAddForm">
+          <template #icon><AddOutline /></template>
+          {{ t("skills.repos.addRepo") }}
+        </NButton>
+      </NSpace>
     </NSpace>
 
     <NCard v-if="showAddForm" size="small" style="margin-bottom: 16px">
@@ -98,6 +137,16 @@ function handleDelete(id: string) {
           <span>{{ repo.name }}</span>
           <NTag :type="repo.enabled ? 'success' : 'default'" size="small">
             {{ repo.enabled ? t("skills.repos.enabled") : t("skills.repos.disabled") }}
+          </NTag>
+          <NTag
+            v-if="getSyncResult(repo.id)"
+            :type="getSyncResult(repo.id)!.success ? 'success' : 'error'"
+            size="small"
+          >
+            {{ getSyncResult(repo.id)!.success
+              ? t("skills.sync.skillCount", { count: getSyncResult(repo.id)!.skillCount })
+              : t("skills.sync.syncFail")
+            }}
           </NTag>
         </NSpace>
       </template>
