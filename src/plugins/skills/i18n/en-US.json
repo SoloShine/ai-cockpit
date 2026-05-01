@@ -89,16 +89,18 @@
       "statusRemoteOnly": "Remote Only",
       "name": "Name",
       "sourceRepo": "Source Repo",
-      "localVersion": "Local Version",
-      "remoteVersion": "Remote Version",
+      "localVersion": "Local Ver",
+      "remoteVersion": "Remote Ver",
       "description": "Description",
       "actions": "Actions",
-      "viewDiff": "View Diff",
+      "viewDiff": "Diff",
       "reinstall": "Reinstall",
-      "reinstallTip": "Reinstall latest version",
+      "reinstallTip": "Local matches remote. Reinstall from remote.",
       "preview": "Preview",
       "batchInstall": "Batch Install",
-      "batchUpdate": "Batch Update"
+      "batchUpdate": "Batch Update",
+      "modeOn": "Compare Mode",
+      "modeOff": "Compare"
     },
     "diff": {
       "title": "Diff: {name}",

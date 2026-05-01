@@ -95,10 +95,12 @@
       "actions": "操作",
       "viewDiff": "查看差异",
       "reinstall": "重新安装",
-      "reinstallTip": "重新安装最新版本",
+      "reinstallTip": "本地与远端一致，重新安装远端版本",
       "preview": "预览",
       "batchInstall": "批量安装",
-      "batchUpdate": "批量更新"
+      "batchUpdate": "批量更新",
+      "modeOn": "对比模式",
+      "modeOff": "开启对比"
     },
     "diff": {
       "title": "差异详情：{name}",
