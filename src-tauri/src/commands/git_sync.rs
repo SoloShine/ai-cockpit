@@ -4,28 +4,37 @@ use crate::services::git_service;
 use crate::services::settings_service::RepoConfig;
 use crate::services::skills_service;
 
-/// Expand a path: ~ → home dir, relative → prepend home dir, absolute → as-is
-fn expand_path(path: &str) -> String {
-    if path.is_empty() {
-        return path.to_string();
+/// Resolve a repo's cache path to an absolute directory.
+///
+/// - Empty or no cachePath → auto-derive from repo URL hash under app data dir
+/// - `~` prefix → expand to home directory
+/// - Absolute path → use as-is
+/// - Relative path → resolve under app data dir
+fn resolve_cache_path(cache_path: &str, repo_id: &str) -> String {
+    let app_data = dirs::data_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("ai-cockpit")
+        .join("repos");
+
+    if cache_path.is_empty() {
+        // Auto-derive from repo_id
+        return app_data.join(repo_id).to_string_lossy().to_string();
     }
-    if path.starts_with('~') {
-        return path.replacen(
-            "~",
-            &dirs::home_dir()
-                .map(|p| p.to_string_lossy().to_string())
-                .unwrap_or_else(|| ".".to_string()),
-            1,
-        );
+
+    let path = std::path::Path::new(cache_path);
+    if cache_path.starts_with('~') {
+        let home = dirs::home_dir()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|| ".".to_string());
+        return cache_path.replacen("~", &home, 1);
     }
-    if path.starts_with('/') || (path.len() >= 2 && path.as_bytes()[1] == b':') {
-        return path.to_string();
+
+    if path.is_absolute() {
+        return cache_path.to_string();
     }
-    // Relative path → resolve against app data dir
-    let home = dirs::home_dir()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|| ".".to_string());
-    format!("{}/.ai-cockpit/{}", home, path)
+
+    // Relative path → resolve under app data dir
+    app_data.join(cache_path).to_string_lossy().to_string()
 }
 
 /// Sync all enabled repositories in parallel.
@@ -41,7 +50,7 @@ pub async fn sync_all_repos(repos: Vec<RepoConfig>) -> Vec<SyncResult> {
         .into_iter()
         .map(|repo| {
             let repo_id = repo.id.clone();
-            let expanded = expand_path(&repo.cache_path);
+            let expanded = resolve_cache_path(&repo.cache_path, &repo.id);
             let url = repo.url.clone();
             tokio::task::spawn_blocking(move || {
                 let result = git_service::sync_repo(&url, &expanded);
@@ -88,7 +97,7 @@ pub async fn get_remote_skills(
     repo_id: String,
     cache_path: String,
 ) -> Result<Vec<RemoteSkillInfo>, String> {
-    let cache_path = expand_path(&cache_path);
+    let cache_path = resolve_cache_path(&cache_path, &repo_id);
     let path = std::path::Path::new(&cache_path);
     if !path.exists() {
         return Ok(vec![]);
@@ -116,7 +125,7 @@ pub async fn get_remote_skill_detail(
     cache_path: String,
     skill_name: String,
 ) -> Result<RemoteSkillDetail, String> {
-    let cache_path = expand_path(&cache_path);
+    let cache_path = resolve_cache_path(&cache_path, &repo_id);
     let skill_path = std::path::Path::new(&cache_path).join(&skill_name);
     if !skill_path.exists() {
         return Err(format!("Skill '{}' not found in repo '{}'", skill_name, repo_id));
