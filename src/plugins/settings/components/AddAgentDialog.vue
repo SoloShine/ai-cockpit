@@ -7,7 +7,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useI18n } from "vue-i18n";
 import type { AgentConfig } from "../types";
 
-const props = defineProps<{ show: boolean }>();
+defineProps<{ show: boolean }>();
 const emit = defineEmits<{
   "update:show": [value: boolean];
   add: [agent: AgentConfig];

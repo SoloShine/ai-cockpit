@@ -4,7 +4,7 @@ import { SunnyOutline, MoonOutline, DesktopOutline } from "@vicons/ionicons5";
 import { useI18n } from "vue-i18n";
 import type { AppearanceSettings } from "../types";
 
-const props = defineProps<{ modelValue: AppearanceSettings["theme"] }>();
+defineProps<{ modelValue: AppearanceSettings["theme"] }>();
 const emit = defineEmits<{ "update:modelValue": [value: AppearanceSettings["theme"]] }>();
 const { t } = useI18n();
 

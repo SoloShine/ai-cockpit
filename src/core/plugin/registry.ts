@@ -1,5 +1,6 @@
+import type { RouteRecordRaw } from "vue-router";
 import type { CockpitPlugin, PluginHooks, PluginModule } from "./types";
-import { ref, computed } from "vue";
+import { ref } from "vue";
 
 class PluginRegistry {
   private plugins = new Map<string, CockpitPlugin>();
@@ -54,8 +55,8 @@ class PluginRegistry {
   }
 
   /** Collect all routes from all plugins. */
-  getRoutes() {
-    const routes: ReturnType<CockpitPlugin["routes"]> = [];
+  getRoutes(): RouteRecordRaw[] {
+    const routes: RouteRecordRaw[] = [];
     for (const plugin of this.getAll()) {
       routes.push(...plugin.routes);
     }

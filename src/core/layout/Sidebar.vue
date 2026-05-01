@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, h } from "vue";
 import { useRouter } from "vue-router";
 import { usePluginStore } from "@/stores/plugin";
 import { useSettingsStore } from "@/plugins/settings/store";
 import { NLayoutSider, NMenu, NIcon, NDivider, NText } from "naive-ui";
 import type { MenuOption } from "naive-ui";
+import type { Component } from "vue";
 import {
   RocketOutline,
   SettingsOutline,
 } from "@vicons/ionicons5";
-import type { Component } from "vue";
 
 const router = useRouter();
 const pluginStore = usePluginStore();
 const settingsStore = useSettingsStore();
 
-function renderIcon(icon: string | Component): (() => Component) | undefined {
+function renderIcon(icon: string | Component) {
   if (typeof icon === "string") return undefined;
-  return () => icon;
+  return () => h(NIcon, null, { default: () => h(icon) });
 }
 
 const pluginMenuOptions = computed<MenuOption[]>(() =>
@@ -58,8 +58,6 @@ const fixedMenuOptions: MenuOption[] = [
     icon: () => h(NIcon, null, { default: () => h(SettingsOutline) }),
   },
 ];
-
-import { h } from "vue";
 
 const allMenuOptions = computed(() => [
   ...pluginMenuOptions.value,

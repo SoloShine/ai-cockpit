@@ -3,7 +3,7 @@ import { NDescriptions, NDescriptionsItem, NTag } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import type { CockpitPlugin } from "@/core/plugin";
 
-const props = defineProps<{ plugin: CockpitPlugin }>();
+defineProps<{ plugin: CockpitPlugin }>();
 const { t } = useI18n();
 </script>
 

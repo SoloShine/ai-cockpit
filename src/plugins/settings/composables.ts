@@ -1,7 +1,6 @@
 // src/plugins/settings/composables.ts
 import { computed } from "vue";
 import { useSettingsStore } from "./store";
-import type { AgentConfig, AppearanceSettings } from "./types";
 
 /** 获取已启用的 Agent 列表（含路径） */
 export function useAgentPaths() {

@@ -5,7 +5,7 @@ import { useI18n } from "vue-i18n";
 import { open } from "@tauri-apps/plugin-dialog";
 import type { AgentConfig } from "../types";
 
-const props = defineProps<{ agent: AgentConfig }>();
+defineProps<{ agent: AgentConfig }>();
 const emit = defineEmits<{
   "update:agent": [updates: Partial<AgentConfig>];
   delete: [];
