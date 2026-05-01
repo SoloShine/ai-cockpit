@@ -6,6 +6,46 @@
 
 前端 Vue 3 + TypeScript + Naive UI，后端 Rust。前后端通过 Tauri IPC 通信。
 
+## 产品背景与愿景
+
+### 起源
+
+本项目前身是 `field-skill-manage`（SPM Manager），一个专门管理 AI Agent Skill 包的 Tauri 2 桌面工具（v1.3.0，32 个 IPC 命令，6 个页面）。支持 Claude Code / OpenCode / Codex / Cursor / Windsurf 五种 Agent 的全局和项目级 Skill 安装、更新、校验、卸载、迁移。
+
+### 升级决策
+
+将 SPM Manager 升级为通用 AI 管理工具箱。选择**全新项目**而非在原项目上扩展，原因：
+
+1. 原项目架构为单一功能（Skill CRUD）设计，flat view 结构无法支撑多模块并行
+2. 历史代码中的假定（单一功能类型、固定侧边栏）会限制扩展
+3. 插件化架构从零设计比改造更干净，避免渐进腐化
+
+### 架构选择：为什么是插件化
+
+评估了三种方案：
+
+| 方案 | 描述 | 结论 |
+|------|------|------|
+| 渐进式增强 | 在原架构上逐模块加 view/store/commands | 模块增多后侧边栏和路由臃肿 |
+| **插件化** | 每个功能模块是标准接口的独立插件 | **选中** — 解耦彻底，支持未来第三方插件 |
+| 多窗口 | Tauri 多窗口隔离各模块 | 窗口间通信复杂，UX 碎片化 |
+
+### 目标用户与商业化
+
+- **目标用户**：泛 AI 用户（开发者 + 设计师 + 产品 + 运营等所有使用 AI 工具的人）
+- **变现模式**：先产品后商业（当前阶段专注做好产品，暂不考虑付费/账号/云服务）
+- **产品定位**：AI 时代的"瑞士军刀"——一个桌面端统一管理所有 AI 相关的配置、工具和资源
+
+### 功能模块规划
+
+| 模块 | 核心能力 | 优先级 | 当前状态 |
+|------|---------|--------|---------|
+| **Skill 管理** | 多 Agent Skill 安装/更新/卸载/迁移，版本对比，Git 同步 | P0 | 待开发（可参考 field-skill-manage） |
+| **提示词库** | 提示词 CRUD、分类、搜索、版本历史、变量模板 | P0 | 待开发 |
+| **开发工具集** | JSON/YAML 格式化、正则测试、Base64、时间转换等轻量工具 | P1 | 待开发（纯前端，无 Rust 依赖） |
+| **AI 测试** | 待定义（可能是输出评测、Agent 行为测试或模型对比） | P2 | 概念阶段，暂不投入 |
+| **设置** | Agent 配置、主题、语言、插件管理 | 核心 | 待开发 |
+
 ## 常用命令
 
 ```bash
@@ -60,15 +100,26 @@ export const hooks: PluginHooks = {
 
 每个插件如果需要 Rust 后端能力，在 `src-tauri/src/commands/` 下创建同名模块（如 `skills.rs`），在 `lib.rs` 的 `invoke_handler` 中注册。服务层放 `services/` 下。
 
-## 当前插件规划
+## 开发路线图
 
-| 插件 | ID | 优先级 | 状态 |
-|------|-----|--------|------|
-| Skill 管理 | `skills` | P0 | 待开发 |
-| 提示词库 | `prompts` | P0 | 待开发 |
-| 开发工具集 | `devtools` | P1 | 待开发 |
-| AI 测试 | `testing` | P2 | 概念阶段 |
-| 设置 | `settings` | 核心 | 待开发 |
+**阶段 1 — 基础框架** ✅ 已完成
+- [x] Tauri 2 + Vue 3 项目脚手架
+- [x] 插件系统核心（types / registry / lifecycle hooks）
+- [x] 动态侧边栏 + 路由合并
+- [x] App Shell 布局
+
+**阶段 2 — 核心插件**
+- [ ] 设置插件（Agent 配置、主题、语言、插件管理）
+- [ ] Skill 管理插件（从 field-skill-manage 迁移核心逻辑）
+- [ ] 提示词库插件
+
+**阶段 3 — 扩展功能**
+- [ ] 开发工具集插件（纯前端工具箱）
+- [ ] AI 测试插件（待产品定义）
+
+**阶段 4 — 商业化准备**
+- [ ] 用户账号 / 云同步（按需）
+- [ ] 团队协作功能（按需）
 
 ## 前端结构
 
@@ -139,7 +190,20 @@ src-tauri/src/
 ## 参考项目
 
 前身项目 `field-skill-manage`（SPM Manager）位于 `D:\Project\field-skill-manage`，可作为 Skill 管理插件实现的参考。主要参考：
-- Skill 发现与版本对比逻辑（services/skill_service.rs）
-- Git 同步机制（services/git_service.rs）
-- 哈希校验策略（services/hash_service.rs）
-- 多 Agent 路径模型（models/config.rs）
+- Skill 发现与版本对比逻辑（services/skill_service.rs，1193 行）
+- Git 同步机制（services/git_service.rs — clone --depth 1 / pull --ff-only + 损坏恢复）
+- 哈希校验策略（services/hash_service.rs — SHA256 聚合哈希，4 级回退）
+- 多 Agent 路径模型（models/config.rs — AgentType 枚举、全局/项目路径模式）
+- 版本对比 UI（SkillCompareTable.vue — 批量操作、状态过滤）
+- Diff 查看器（SkillDiffViewer.vue — 逐行高亮）
+- 跨 Agent 迁移（MigrateDialog.vue — 3 步向导）
+
+## 新会话快速启动
+
+如果你是一个新的 Claude Code 会话，以下是快速进入工作状态的要点：
+
+1. **读 CLAUDE.md**（你正在读）— 包含架构、约定、路线图
+2. **看 src/core/plugin/types.ts** — 理解插件接口，这是整个项目的基础契约
+3. **看 src/main.ts** — 理解插件注册点和应用启动流程
+4. **当前阶段**：阶段 2（核心插件开发），优先做设置插件，然后是 Skill 管理和提示词库
+5. **参考代码**：需要实现 Skill 管理时参考 `D:\Project\field-skill-manage`
