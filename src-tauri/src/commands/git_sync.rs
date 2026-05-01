@@ -103,7 +103,7 @@ pub async fn get_remote_skills(
         return Ok(vec![]);
     }
 
-    let scan_result = skills_service::scan_skills(&cache_path, &repo_id, crate::models::skills::SkillScope::Global)?;
+    let scan_result = skills_service::scan_remote_skills(&cache_path, &repo_id)?;
 
     Ok(scan_result
         .skills
@@ -133,7 +133,7 @@ pub async fn get_remote_skill_detail(
 
     let files = skills_service::build_file_tree(skill_path.to_string_lossy().to_string().as_str())?;
 
-    let scan_result = skills_service::scan_skills(&cache_path, &repo_id, crate::models::skills::SkillScope::Global)?;
+    let scan_result = skills_service::scan_remote_skills(&cache_path, &repo_id)?;
     let skill_info = scan_result
         .skills
         .into_iter()
@@ -155,6 +155,6 @@ pub async fn get_remote_skill_detail(
 
 /// Count skill directories/files in a cached repo
 fn count_skills_in_dir(cache_path: &str) -> Result<u32, String> {
-    let result = skills_service::scan_skills(cache_path, "", crate::models::skills::SkillScope::Global)?;
+    let result = skills_service::scan_remote_skills(cache_path, "")?;
     Ok(result.total as u32)
 }
