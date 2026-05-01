@@ -16,6 +16,12 @@ pub fn run() {
             commands::settings::save_settings,
             commands::settings::get_data_dir,
             commands::settings::open_in_explorer,
+            commands::settings::export_config,
+            commands::settings::import_config,
+            // Git Sync
+            commands::git_sync::sync_all_repos,
+            commands::git_sync::get_remote_skills,
+            commands::git_sync::get_remote_skill_detail,
             // Skills — Batch 1: Scan
             commands::skills::scan_global_skills,
             commands::skills::scan_project_skills,
