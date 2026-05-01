@@ -100,6 +100,20 @@ export const hooks: PluginHooks = {
 
 每个插件如果需要 Rust 后端能力，在 `src-tauri/src/commands/` 下创建同名模块（如 `skills.rs`），在 `lib.rs` 的 `invoke_handler` 中注册。服务层放 `services/` 下。
 
+### 插件开发速查
+
+完整规范见 `docs/plugin-development-guide.md`。要点：
+
+- **目录**：`src/plugins/<plugin-id>/index.ts` — 导出 `PluginModule`
+- **注册**：在 `src/main.ts` 中 `pluginRegistry.register(module)`
+- **路由**：每个 route 的 `meta.pluginId` 必须等于插件 `id`，用懒加载
+- **i18n**：插件自管 `i18n/zh-CN.json`，在 `onInit` 中 `mergeLocaleMessage`
+- **设置**：导出 `SettingsPanel` 组件 → 自动在设置页成为独立 Tab
+- **公共 API**：从 `composables.ts` 导出（如 `useAgentPaths`）
+- **跨插件通信**：Pinia store 或公共 composables，禁止直接 import 其他插件的组件
+- **Rust 端**：`commands/<id>.rs` + `services/<id>_service.rs`，serde 用 `rename` 对齐 camelCase
+- **命名**：ID 用 kebab-case，目录/Rust 模块与 ID 一致
+
 ## 开发路线图
 
 **阶段 1 — 基础框架** ✅ 已完成
