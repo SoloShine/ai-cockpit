@@ -194,7 +194,44 @@ export interface AppSettings {
 }
 ```
 
-- [ ] **Step 2: 创建中文 i18n 资源**
+- [ ] **Step 2: 创建 composables.ts 公共 API**
+
+其他插件通过这些 composable 获取公共配置，不直接依赖 store 内部结构：
+
+```typescript
+// src/plugins/settings/composables.ts
+import { computed } from "vue";
+import { useSettingsStore } from "./store";
+import type { AgentConfig, AppearanceSettings } from "./types";
+
+/** 获取已启用的 Agent 列表（含路径） */
+export function useAgentPaths() {
+  const store = useSettingsStore();
+  const enabledAgents = computed(() =>
+    store.agents.filter((a) => a.enabled)
+  );
+  const getAgentById = (id: string) => store.agents.find((a) => a.id === id);
+  return { enabledAgents, getAgentById, allAgents: computed(() => store.agents) };
+}
+
+/** 获取外观配置（主题、语言、字号） */
+export function useAppAppearance() {
+  const store = useSettingsStore();
+  return {
+    theme: computed(() => store.appearance.theme),
+    language: computed(() => store.appearance.language),
+    fontSize: computed(() => store.appearance.fontSize),
+  };
+}
+
+/** 查询插件是否启用 */
+export function usePluginEnabled(pluginId: string) {
+  const store = useSettingsStore();
+  return computed(() => !store.plugins.disabledIds.includes(pluginId));
+}
+```
+
+- [ ] **Step 3: 创建中文 i18n 资源**
 
 ```json
 {
@@ -252,7 +289,7 @@ export interface AppSettings {
 }
 ```
 
-- [ ] **Step 3: 创建英文 i18n 资源**
+- [ ] **Step 4: 创建英文 i18n 资源**
 
 ```json
 {
@@ -310,10 +347,10 @@ export interface AppSettings {
 }
 ```
 
-- [ ] **Step 4: 提交**
+- [ ] **Step 5: 提交**
 
 ```bash
-git add src/plugins/settings/types.ts src/plugins/settings/i18n/
+git add src/plugins/settings/types.ts src/plugins/settings/composables.ts src/plugins/settings/i18n/
 git commit -m "feat(settings): add type definitions and i18n resources"
 ```
 
@@ -1587,7 +1624,7 @@ watch(
 );
 ```
 
-- [ ] **Step 4: 端到端验证**
+- [ ] **Step 3: 端到端验证**
 
 运行: `npm run tauri dev`
 
@@ -1600,7 +1637,7 @@ watch(
 6. 关于 Tab：显示版本号和数据目录
 7. 重启应用 → 设置保持不变
 
-- [ ] **Step 5: 提交**
+- [ ] **Step 4: 提交**
 
 ```bash
 git add -A
