@@ -55,7 +55,23 @@ npm run tauri build        # 生产构建 → src-tauri/target/release/bundle/
 npm run build              # 仅前端构建
 ```
 
-项目未配置测试框架，没有测试命令。
+### E2E 测试
+
+```bash
+# 前置条件（首次）
+cargo install tauri-driver --locked
+
+# 安装 e2e 依赖（首次）
+cd e2e && npm install
+
+# 运行全部 E2E 测试
+cd e2e && npm test
+
+# 运行单个测试文件
+cd e2e && npx wdio run wdio.conf.ts --spec ./specs/welcome.spec.ts
+```
+
+E2E 测试使用 WDIO 9 + tauri-driver，配置和测试文件在 `e2e/` 目录下（独立 package.json）。测试通过 `data-testid` 属性定位元素，新增组件时需添加对应 `data-testid`。
 
 ## 插件架构
 
