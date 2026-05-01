@@ -82,3 +82,48 @@ export interface RemoteSkillDetail {
   files: FileEntry[]
   contentHash: string
 }
+
+/** Status of a skill comparison between local and remote */
+export type ComparisonStatus = 'same' | 'outdated' | 'localOnly' | 'remoteOnly'
+
+/** A comparison pairing local and remote skill info */
+export interface SkillComparison {
+  name: string
+  status: ComparisonStatus
+  local?: SkillInfo
+  remote?: SkillInfo
+  sourceRepo?: string
+}
+
+/** File-level diff entry */
+export interface FileDiffEntry {
+  path: string
+  fileName: string
+  diffType: DiffStatus
+  localSize?: number
+  remoteSize?: number
+}
+
+/** Full skill diff result */
+export interface SkillDiffResult {
+  skillName: string
+  fileDiffs: FileDiffEntry[]
+  addedCount: number
+  removedCount: number
+  modifiedCount: number
+  unchangedCount: number
+}
+
+/** File content for line-by-line diff */
+export interface DiffFileContent {
+  localContent?: string
+  remoteContent?: string
+}
+
+/** A single line in a diff output */
+export interface DiffLine {
+  type: 'added' | 'removed' | 'unchanged'
+  oldLineNumber?: number
+  newLineNumber?: number
+  content: string
+}

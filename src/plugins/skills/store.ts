@@ -9,6 +9,9 @@ import type {
   ScanResult,
   OperationResult,
   SkillOperation,
+  SkillComparison,
+  SkillDiffResult,
+  DiffFileContent,
 } from "./types";
 
 const PROJECT_PATHS_KEY = "skills_project_paths";
@@ -37,6 +40,10 @@ export const useSkillsStore = defineStore("skills", () => {
   const selectedSkills = ref<Set<string>>(new Set());
   const loading = ref(false);
   const error = ref<string | null>(null);
+  const comparisons = ref<SkillComparison[]>([]);
+  const comparisonMode = ref(false);
+  const currentDiff = ref<SkillDiffResult | null>(null);
+  const loadingDiff = ref(false);
 
   // Computed
   const currentSkills = computed<SkillInfo[]>(() => {
@@ -49,6 +56,14 @@ export const useSkillsStore = defineStore("skills", () => {
   const availableAgents = computed(() => {
     const store = useSettingsStore();
     return store.agents.filter((a) => a.enabled);
+  });
+
+  const comparisonCounts = computed(() => {
+    const counts = { outdated: 0, remoteOnly: 0, localOnly: 0, same: 0 };
+    for (const c of comparisons.value) {
+      counts[c.status]++;
+    }
+    return counts;
   });
 
   // Methods
@@ -126,22 +141,30 @@ export const useSkillsStore = defineStore("skills", () => {
   async function switchAgent(agentId: string): Promise<void> {
     currentAgentId.value = agentId;
     selectedSkills.value.clear();
+    comparisons.value = [];
 
     const skillsMap =
       currentScope.value === "global" ? globalSkills.value : projectSkills.value;
     if (!skillsMap.has(agentId)) {
       await scanSkills(agentId, currentScope.value);
     }
+    if (comparisonMode.value) {
+      await loadComparisons();
+    }
   }
 
   async function switchScope(scope: SkillScope): Promise<void> {
     currentScope.value = scope;
     selectedSkills.value.clear();
+    comparisons.value = [];
 
     const skillsMap =
       scope === "global" ? globalSkills.value : projectSkills.value;
     if (!skillsMap.has(currentAgentId.value)) {
       await scanSkills(currentAgentId.value, scope);
+    }
+    if (comparisonMode.value) {
+      await loadComparisons();
     }
   }
 
@@ -237,6 +260,71 @@ export const useSkillsStore = defineStore("skills", () => {
     selectedSkills.value.clear();
   }
 
+  async function loadComparisons(): Promise<void> {
+    loading.value = true;
+    error.value = null;
+    try {
+      const settingsStore = useSettingsStore();
+      const agent = settingsStore.agents.find((a) => a.id === currentAgentId.value);
+      if (!agent) return;
+
+      comparisons.value = await invoke<SkillComparison[]>("compare_skills", {
+        agentId: currentAgentId.value,
+        scope: currentScope.value,
+        globalPath: agent.globalPath,
+        projectPath: agent.projectPath,
+        projectDir: currentProjectPath.value,
+        repos: settingsStore.repos,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      error.value = msg;
+      console.error("[SkillsStore] Failed to load comparisons:", e);
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  function toggleComparisonMode(): void {
+    comparisonMode.value = !comparisonMode.value;
+    if (comparisonMode.value) {
+      loadComparisons();
+    }
+  }
+
+  async function loadSkillDiff(
+    localPath: string,
+    remotePath: string,
+  ): Promise<SkillDiffResult> {
+    loadingDiff.value = true;
+    try {
+      const result = await invoke<SkillDiffResult>("get_skill_diff", {
+        localSkillPath: localPath,
+        remoteSkillPath: remotePath,
+      });
+      currentDiff.value = result;
+      return result;
+    } finally {
+      loadingDiff.value = false;
+    }
+  }
+
+  async function loadDiffFileContent(
+    localSkillPath: string,
+    remoteSkillPath: string,
+    relFilePath: string,
+  ): Promise<DiffFileContent> {
+    return invoke<DiffFileContent>("get_diff_file_content", {
+      localSkillPath,
+      remoteSkillPath,
+      relFilePath,
+    });
+  }
+
+  function clearDiff(): void {
+    currentDiff.value = null;
+  }
+
   return {
     // State
     currentAgentId,
@@ -268,5 +356,17 @@ export const useSkillsStore = defineStore("skills", () => {
     toggleSelect,
     selectAll,
     clearSelection,
+
+    // Comparison
+    comparisons,
+    comparisonMode,
+    comparisonCounts,
+    currentDiff,
+    loadingDiff,
+    loadComparisons,
+    toggleComparisonMode,
+    loadSkillDiff,
+    loadDiffFileContent,
+    clearDiff,
   };
 });
