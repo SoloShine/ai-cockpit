@@ -110,6 +110,11 @@
       "unchanged": "未变",
       "loading": "加载中...",
       "selectFile": "点击左侧文件查看差异"
+    },
+    "preview": {
+      "title": "预览：{name}",
+      "selectFile": "点击左侧文件查看内容",
+      "loadError": "加载失败"
     }
   }
 }

@@ -110,6 +110,11 @@
       "unchanged": "Unchanged",
       "loading": "Loading...",
       "selectFile": "Click a file on the left to view diff"
+    },
+    "preview": {
+      "title": "Preview: {name}",
+      "selectFile": "Click a file on the left to view content",
+      "loadError": "Failed to load"
     }
   }
 }
