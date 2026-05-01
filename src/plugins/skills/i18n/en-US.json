@@ -80,6 +80,36 @@
       "uninstallMsg": "Are you sure you want to uninstall skill \"{name}\"? This cannot be undone.",
       "batchUninstall": "Confirm Batch Uninstall",
       "batchUninstallMsg": "Are you sure you want to uninstall {count} selected skills?"
+    },
+    "compare": {
+      "status": "Status",
+      "statusSame": "Same",
+      "statusOutdated": "Outdated",
+      "statusLocalOnly": "Local Only",
+      "statusRemoteOnly": "Remote Only",
+      "name": "Name",
+      "sourceRepo": "Source Repo",
+      "localVersion": "Local Version",
+      "remoteVersion": "Remote Version",
+      "description": "Description",
+      "actions": "Actions",
+      "viewDiff": "View Diff",
+      "reinstall": "Reinstall",
+      "reinstallTip": "Reinstall latest version",
+      "preview": "Preview",
+      "batchInstall": "Batch Install",
+      "batchUpdate": "Batch Update"
+    },
+    "diff": {
+      "title": "Diff: {name}",
+      "file": "File",
+      "status": "Status",
+      "added": "Added",
+      "removed": "Removed",
+      "modified": "Modified",
+      "unchanged": "Unchanged",
+      "loading": "Loading...",
+      "selectFile": "Click a file on the left to view diff"
     }
   }
 }

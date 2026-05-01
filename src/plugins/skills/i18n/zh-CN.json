@@ -99,6 +99,17 @@
       "preview": "预览",
       "batchInstall": "批量安装",
       "batchUpdate": "批量更新"
+    },
+    "diff": {
+      "title": "差异详情：{name}",
+      "file": "文件",
+      "status": "状态",
+      "added": "新增",
+      "removed": "删除",
+      "modified": "修改",
+      "unchanged": "未变",
+      "loading": "加载中...",
+      "selectFile": "点击左侧文件查看差异"
     }
   }
 }
