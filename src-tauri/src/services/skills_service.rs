@@ -675,6 +675,244 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// Build skill comparisons by pairing local skills with remote skills.
+pub fn build_skill_comparisons(
+    local_dir: &str,
+    repos: &[(String, String)], // (repo_id, cache_path)
+) -> Result<Vec<SkillComparison>, String> {
+    // 1. Scan local skills
+    let local_result = scan_skills(local_dir, "", SkillScope::Global)?;
+    let local_map: HashMap<String, SkillInfo> = local_result
+        .skills
+        .into_iter()
+        .map(|s| (s.name.clone(), s))
+        .collect();
+
+    // 2. Scan remote skills from all repos, build map of name -> (SkillInfo, repo_id)
+    let mut remote_map: HashMap<String, (SkillInfo, String)> = HashMap::new();
+    for (repo_id, cache_path) in repos {
+        if let Ok(remote_result) = scan_remote_skills(cache_path, repo_id) {
+            for skill in remote_result.skills {
+                remote_map.entry(skill.name.clone()).or_insert_with(|| {
+                    (skill, repo_id.clone())
+                });
+            }
+        }
+    }
+
+    // 3. Build comparisons
+    let mut comparisons = Vec::new();
+    let mut all_names: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+    for name in local_map.keys() {
+        all_names.insert(name.clone());
+    }
+    for name in remote_map.keys() {
+        all_names.insert(name.clone());
+    }
+
+    for name in all_names {
+        let local = local_map.get(&name).cloned();
+        let remote_entry = remote_map.get(&name);
+        let remote = remote_entry.map(|(s, _)| s.clone());
+        let source_repo = remote_entry.map(|(_, repo_id)| repo_id.clone());
+
+        let status = match (&local, &remote) {
+            (Some(l), Some(r)) => {
+                if l.content_hash == r.content_hash {
+                    ComparisonStatus::Same
+                } else {
+                    ComparisonStatus::Outdated
+                }
+            }
+            (Some(_), None) => ComparisonStatus::LocalOnly,
+            (None, Some(_)) => ComparisonStatus::RemoteOnly,
+            (None, None) => ComparisonStatus::LocalOnly, // Should not happen, but handle it
+        };
+
+        comparisons.push(SkillComparison {
+            name,
+            status,
+            local,
+            remote,
+            source_repo,
+        });
+    }
+
+    // Sort: Outdated first, then RemoteOnly, then Same, then LocalOnly
+    comparisons.sort_by(|a, b| {
+        let order = |s: &ComparisonStatus| match s {
+            ComparisonStatus::Outdated => 0,
+            ComparisonStatus::RemoteOnly => 1,
+            ComparisonStatus::Same => 2,
+            ComparisonStatus::LocalOnly => 3,
+        };
+        order(&a.status).cmp(&order(&b.status))
+    });
+
+    Ok(comparisons)
+}
+
+/// Build file-level diff between local and remote skill directories.
+pub fn build_skill_diff(
+    local_path: &str,
+    remote_path: &str,
+) -> Result<SkillDiffResult, String> {
+    let local = Path::new(local_path);
+    let remote = Path::new(remote_path);
+
+    let mut local_files: HashMap<String, (String, u64)> = HashMap::new();
+    let mut remote_files: HashMap<String, (String, u64)> = HashMap::new();
+
+    if local.exists() {
+        collect_file_hashes(local, local, &mut local_files)?;
+    }
+    if remote.exists() {
+        collect_file_hashes(remote, remote, &mut remote_files)?;
+    }
+
+    let mut all_paths: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    for p in local_files.keys() {
+        all_paths.insert(p.clone());
+    }
+    for p in remote_files.keys() {
+        all_paths.insert(p.clone());
+    }
+
+    let mut file_diffs = Vec::new();
+    let mut added = 0u32;
+    let mut removed = 0u32;
+    let mut modified = 0u32;
+    let mut unchanged = 0u32;
+
+    for rel_path in all_paths {
+        let local_entry = local_files.get(&rel_path);
+        let remote_entry = remote_files.get(&rel_path);
+
+        let (diff_type, local_size, remote_size) = match (local_entry, remote_entry) {
+            (Some((lh, ls)), Some((rh, rs))) => {
+                if lh == rh {
+                    unchanged += 1;
+                    (DiffStatus::Same, Some(*ls), Some(*rs))
+                } else {
+                    modified += 1;
+                    (DiffStatus::Modified, Some(*ls), Some(*rs))
+                }
+            }
+            (Some((_, ls)), None) => {
+                removed += 1;
+                (DiffStatus::Removed, Some(*ls), None)
+            }
+            (None, Some((_, rs))) => {
+                added += 1;
+                (DiffStatus::Added, None, Some(*rs))
+            }
+            (None, None) => {
+                // Should not happen since all_paths is built from both maps
+                (DiffStatus::Same, None, None)
+            }
+        };
+
+        let file_name = Path::new(&rel_path)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(&rel_path)
+            .to_string();
+
+        file_diffs.push(FileDiffEntry {
+            path: rel_path,
+            file_name,
+            diff_type,
+            local_size,
+            remote_size,
+        });
+    }
+
+    Ok(SkillDiffResult {
+        skill_name: local
+            .file_name()
+            .and_then(|n| n.to_str())
+            .or_else(|| remote.file_name().and_then(|n| n.to_str()))
+            .unwrap_or("unknown")
+            .to_string(),
+        file_diffs,
+        added_count: added,
+        removed_count: removed,
+        modified_count: modified,
+        unchanged_count: unchanged,
+    })
+}
+
+/// Collect relative file paths with their hashes into a map.
+fn collect_file_hashes(
+    base: &Path,
+    current: &Path,
+    result: &mut HashMap<String, (String, u64)>,
+) -> Result<(), String> {
+    let entries = std::fs::read_dir(current)
+        .map_err(|e| format!("Failed to read dir {}: {}", current.display(), e))?;
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let name = entry.file_name().to_string_lossy().to_string();
+
+        if name.starts_with('.') {
+            continue;
+        }
+
+        if path.is_file() {
+            let rel = path.strip_prefix(base)
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_else(|_| path.to_string_lossy().to_string());
+            let rel = rel.replace('\\', "/");
+
+            let content = std::fs::read(&path)
+                .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
+            let size = content.len() as u64;
+            let hash = calculate_hash(&content);
+            result.insert(rel, (hash, size));
+        } else if path.is_dir() {
+            collect_file_hashes(base, &path, result)?;
+        }
+    }
+
+    Ok(())
+}
+
+/// Get content of a file from both local and remote skill directories for line diff.
+pub fn get_diff_file_content(
+    local_skill_path: &str,
+    remote_skill_path: &str,
+    rel_file_path: &str,
+) -> Result<DiffFileContent, String> {
+    let normalized = rel_file_path.replace('\\', "/");
+
+    let local_content = {
+        let path = Path::new(local_skill_path).join(&normalized);
+        if path.exists() {
+            Some(std::fs::read_to_string(&path)
+                .map_err(|e| format!("Failed to read local file: {}", e))?)
+        } else {
+            None
+        }
+    };
+
+    let remote_content = {
+        let path = Path::new(remote_skill_path).join(&normalized);
+        if path.exists() {
+            Some(std::fs::read_to_string(&path)
+                .map_err(|e| format!("Failed to read remote file: {}", e))?)
+        } else {
+            None
+        }
+    };
+
+    Ok(DiffFileContent {
+        local_content,
+        remote_content,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

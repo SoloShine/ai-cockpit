@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use crate::models::skills::*;
+use crate::services::settings_service::RepoConfig;
 use crate::services::skills_service;
 
 /// Get the user's home directory
@@ -148,4 +149,72 @@ pub async fn verify_skill_integrity(
     expected_hash: String,
 ) -> Result<bool, String> {
     skills_service::verify_skill_integrity(&skill_path, &expected_hash)
+}
+
+/// Compare local skills against remote repos.
+#[tauri::command]
+pub async fn compare_skills(
+    agent_id: String,
+    scope: String,
+    global_path: String,
+    project_path: String,
+    project_dir: String,
+    repos: Vec<RepoConfig>,
+) -> Result<Vec<SkillComparison>, String> {
+    let expanded = expand_path(&global_path);
+
+    let local_dir = if scope == "project" {
+        if project_dir.is_empty() {
+            return Ok(vec![]);
+        }
+        format!("{}/{}", project_dir, project_path)
+    } else {
+        format!("{}/skills", expanded)
+    };
+
+    let repo_dirs: Vec<(String, String)> = repos
+        .into_iter()
+        .filter(|r| r.enabled)
+        .map(|r| {
+            let cache = if r.cache_path.is_empty() {
+                dirs::data_dir()
+                    .map(|d| d.join("ai-cockpit").join("repos").join(&r.id))
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_default()
+            } else if r.cache_path.starts_with('~') {
+                let home = dirs::home_dir()
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                r.cache_path.replacen("~", &home, 1)
+            } else {
+                r.cache_path.clone()
+            };
+            (r.id, cache)
+        })
+        .collect();
+
+    skills_service::build_skill_comparisons(&local_dir, &repo_dirs)
+}
+
+/// Get file-level diff between local and remote versions of a skill.
+#[tauri::command]
+pub async fn get_skill_diff(
+    local_skill_path: String,
+    remote_skill_path: String,
+) -> Result<SkillDiffResult, String> {
+    skills_service::build_skill_diff(&local_skill_path, &remote_skill_path)
+}
+
+/// Get content of a file from both local and remote skill for line diff.
+#[tauri::command]
+pub async fn get_diff_file_content(
+    local_skill_path: String,
+    remote_skill_path: String,
+    rel_file_path: String,
+) -> Result<DiffFileContent, String> {
+    skills_service::get_diff_file_content(
+        &local_skill_path,
+        &remote_skill_path,
+        &rel_file_path,
+    )
 }

@@ -35,6 +35,10 @@ pub fn run() {
             commands::skills::uninstall_skill,
             commands::skills::batch_operate,
             commands::skills::verify_skill_integrity,
+            // Skills — Batch 3: Comparison
+            commands::skills::compare_skills,
+            commands::skills::get_skill_diff,
+            commands::skills::get_diff_file_content,
         ])
         .run(tauri::generate_context!())
         .expect("error while running AI Cockpit");

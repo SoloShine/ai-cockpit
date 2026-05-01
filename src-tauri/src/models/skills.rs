@@ -153,3 +153,60 @@ pub struct AgentSkillInfo {
     pub skills: Vec<SkillInfo>,
     pub total: u64,
 }
+
+/// Comparison status between local and remote skill versions
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum ComparisonStatus {
+    Same,
+    Outdated,
+    LocalOnly,
+    RemoteOnly,
+}
+
+/// A single skill comparison result pairing local and remote versions
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillComparison {
+    pub name: String,
+    pub status: ComparisonStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub local: Option<SkillInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remote: Option<SkillInfo>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_repo: Option<String>,
+}
+
+/// File-level diff entry between local and remote
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FileDiffEntry {
+    pub path: String,
+    pub file_name: String,
+    pub diff_type: DiffStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub local_size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remote_size: Option<u64>,
+}
+
+/// File content for line-by-line diff
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DiffFileContent {
+    pub local_content: Option<String>,
+    pub remote_content: Option<String>,
+}
+
+/// Full skill diff result containing all file-level diffs
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillDiffResult {
+    pub skill_name: String,
+    pub file_diffs: Vec<FileDiffEntry>,
+    pub added_count: u32,
+    pub removed_count: u32,
+    pub modified_count: u32,
+    pub unchanged_count: u32,
+}
