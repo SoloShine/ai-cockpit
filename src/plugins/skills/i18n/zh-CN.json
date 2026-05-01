@@ -45,9 +45,18 @@
       "path": "路径"
     },
     "project": {
-      "selectProject": "选择项目",
+      "title": "项目 Skills",
       "addProject": "添加项目",
-      "noProjects": "暂无项目，点击上方按钮添加"
+      "pathLabel": "项目路径",
+      "pathPlaceholder": "例如 D:\\Project\\my-app",
+      "addSuccess": "项目已添加",
+      "noProjects": "暂无项目，点击上方按钮添加",
+      "remove": "移除",
+      "removeConfirm": "确定要移除此项目吗？",
+      "outdated": "可更新",
+      "available": "可安装",
+      "upToDate": "已是最新",
+      "detail": "查看详情"
     },
     "repos": {
       "title": "Skill 仓库",

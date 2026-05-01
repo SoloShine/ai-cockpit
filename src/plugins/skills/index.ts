@@ -1,5 +1,5 @@
 // src/plugins/skills/index.ts
-import { RocketOutline } from "@vicons/ionicons5";
+import { RocketOutline, FolderOutline } from "@vicons/ionicons5";
 import type { PluginModule } from "@/core/plugin";
 import i18n from "@/core/i18n";
 import RepoPanel from "./components/RepoPanel.vue";
@@ -19,12 +19,29 @@ const plugin: PluginModule = {
         component: () => import("./views/SkillsMainView.vue"),
         meta: { pluginId: "skills" },
       },
+      {
+        path: "/skills/projects",
+        name: "skills-projects",
+        component: () => import("./views/ProjectListView.vue"),
+        meta: { pluginId: "skills" },
+      },
+      {
+        path: "/skills/projects/:encodedPath",
+        name: "skills-project-detail",
+        component: () => import("./views/ProjectDetailView.vue"),
+        meta: { pluginId: "skills" },
+      },
     ],
     navItems: [
       {
         routeName: "skills",
-        label: "Skill 管理",
+        label: "全局 Skills",
         icon: RocketOutline,
+      },
+      {
+        routeName: "skills-projects",
+        label: "项目 Skills",
+        icon: FolderOutline,
       },
     ],
     order: 10,
@@ -34,9 +51,7 @@ const plugin: PluginModule = {
       i18n.global.mergeLocaleMessage("zh-CN", zhCN);
       i18n.global.mergeLocaleMessage("en-US", enUS);
     },
-    async onActivate() {
-      // Scan is handled by SkillsMainView's onMounted to avoid duplicate calls
-    },
+    async onActivate() {},
     SettingsPanel: RepoPanel,
   },
 };

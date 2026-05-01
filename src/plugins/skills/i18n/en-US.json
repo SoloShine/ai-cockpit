@@ -45,9 +45,18 @@
       "path": "Path"
     },
     "project": {
-      "selectProject": "Select Project",
+      "title": "Project Skills",
       "addProject": "Add Project",
-      "noProjects": "No projects yet. Click above to add one."
+      "pathLabel": "Project Path",
+      "pathPlaceholder": "e.g. D:\\Project\\my-app",
+      "addSuccess": "Project added",
+      "noProjects": "No projects yet. Click above to add one.",
+      "remove": "Remove",
+      "removeConfirm": "Remove this project from the list?",
+      "outdated": "outdated",
+      "available": "available",
+      "upToDate": "up to date",
+      "detail": "View Details"
     },
     "repos": {
       "title": "Skill Repositories",

@@ -1,18 +1,30 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { NSpace, NText, NButton, NIcon } from "naive-ui";
-import { useI18n } from "vue-i18n";
+import { ArrowBackOutline } from "@vicons/ionicons5";
 import { useSkillsStore } from "../store";
 import AgentSelect from "../components/AgentSelect.vue";
 import SkillCompareTable from "../components/SkillCompareTable.vue";
 import SkillDiffViewer from "../components/SkillDiffViewer.vue";
 import SkillPreviewModal from "../components/SkillPreviewModal.vue";
-import { SyncOutline } from "@vicons/ionicons5";
-import { useSettingsStore } from "@/plugins/settings/store";
 
-const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const store = useSkillsStore();
-const settingsStore = useSettingsStore();
+
+// Decode project path from base64 route param
+const projectPath = computed(() => {
+  try {
+    return atob(route.params.encodedPath as string);
+  } catch {
+    return "";
+  }
+});
+
+const projectName = computed(() => {
+  return projectPath.value.split(/[/\\]/).pop() ?? projectPath.value;
+});
 
 const showDiff = ref(false);
 const diffLocalPath = ref("");
@@ -22,18 +34,10 @@ const previewSkillPath = ref("");
 const previewSkillName = ref("");
 
 onMounted(() => {
-  store.loadComparisons("global");
+  if (projectPath.value) {
+    store.loadComparisons("project", projectPath.value);
+  }
 });
-
-watch(() => store.currentAgentId, () => {
-  store.loadComparisons("global");
-});
-
-function handleSync() {
-  settingsStore.syncAllRepos().then(() => {
-    store.loadComparisons("global");
-  });
-}
 
 function handleDiff(localPath: string, remotePath: string) {
   diffLocalPath.value = localPath;
@@ -46,18 +50,25 @@ function handlePreview(skillPath: string, skillName: string) {
   previewSkillName.value = skillName;
   showPreview.value = true;
 }
+
+function goBack() {
+  router.push({ name: "skills-projects" });
+}
 </script>
 
 <template>
   <div style="height: 100%; display: flex; flex-direction: column">
     <NSpace vertical :size="16" style="flex: 1; overflow: auto">
-      <NSpace justify="space-between" align="center">
-        <NText strong style="font-size: 18px">{{ t("skills.title") }}</NText>
-        <NButton size="small" :loading="settingsStore.syncing" @click="handleSync">
-          <template #icon><NIcon :component="SyncOutline" /></template>
-          {{ settingsStore.syncing ? t("skills.sync.syncing") : t("skills.sync.syncAll") }}
+      <NSpace align="center" :size="12">
+        <NButton quaternary size="small" @click="goBack">
+          <template #icon><NIcon :component="ArrowBackOutline" /></template>
         </NButton>
+        <NText strong style="font-size: 18px">{{ projectName }}</NText>
       </NSpace>
+
+      <NText depth="3" style="font-size: 12px; font-family: monospace">
+        {{ projectPath }}
+      </NText>
 
       <AgentSelect />
 

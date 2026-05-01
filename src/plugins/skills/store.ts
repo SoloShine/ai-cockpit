@@ -260,20 +260,34 @@ export const useSkillsStore = defineStore("skills", () => {
     selectedSkills.value.clear();
   }
 
-  async function loadComparisons(): Promise<void> {
+  /** Resolve the local skill directory for a given scope + project */
+  function resolveLocalDir(scope: SkillScope, projectPath?: string): string {
+    const agent = getCurrentAgentConfig();
+    if (!agent) return "";
+    if (scope === "global") {
+      return agent.globalPath + "/skills";
+    }
+    // Project: projectPath is the project root (e.g. D:\Project\my-app)
+    const dir = projectPath ?? currentProjectPath.value;
+    if (!dir) return "";
+    return dir + "/" + agent.projectPath + "/skills";
+  }
+
+  async function loadComparisons(scope?: SkillScope, projectPath?: string): Promise<void> {
     loading.value = true;
     error.value = null;
     try {
       const settingsStore = useSettingsStore();
-      const agent = settingsStore.agents.find((a) => a.id === currentAgentId.value);
-      if (!agent) return;
+      const resolvedScope = scope ?? currentScope.value;
+      const localDir = resolveLocalDir(resolvedScope, projectPath);
+      if (!localDir) {
+        comparisons.value = [];
+        loading.value = false;
+        return;
+      }
 
       comparisons.value = await invoke<SkillComparison[]>("compare_skills", {
-        agentId: currentAgentId.value,
-        scope: currentScope.value,
-        globalPath: agent.globalPath,
-        projectPath: agent.projectPath,
-        projectDir: currentProjectPath.value,
+        localDir,
         repos: settingsStore.repos,
       });
     } catch (e) {
@@ -343,6 +357,7 @@ export const useSkillsStore = defineStore("skills", () => {
 
     // Methods
     getCurrentAgentConfig,
+    resolveLocalDir,
     scanSkills,
     switchAgent,
     switchScope,

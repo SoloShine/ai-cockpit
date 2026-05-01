@@ -151,49 +151,40 @@ pub async fn verify_skill_integrity(
     skills_service::verify_skill_integrity(&skill_path, &expected_hash)
 }
 
+/// Resolve a repo's cache path to an absolute directory.
+fn resolve_repo_cache(cache_path: &str, repo_id: &str) -> String {
+    if cache_path.is_empty() {
+        dirs::data_dir()
+            .map(|d| d.join("ai-cockpit").join("repos").join(repo_id))
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_default()
+    } else if cache_path.starts_with('~') {
+        let home = dirs::home_dir()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_default();
+        cache_path.replacen("~", &home, 1)
+    } else {
+        cache_path.to_string()
+    }
+}
+
 /// Compare local skills against remote repos.
+/// `local_dir` is the fully resolved skill directory (e.g. ~/.claude/skills).
+/// Frontend is responsible for constructing it correctly.
 #[tauri::command]
 pub async fn compare_skills(
-    _agent_id: String,
-    scope: String,
-    global_path: String,
-    project_path: String,
-    project_dir: String,
+    local_dir: String,
     repos: Vec<RepoConfig>,
 ) -> Result<Vec<SkillComparison>, String> {
-    let expanded = expand_path(&global_path);
-
-    let local_dir = if scope == "project" {
-        if project_dir.is_empty() {
-            return Ok(vec![]);
-        }
-        format!("{}/{}", project_dir, project_path)
-    } else {
-        format!("{}/skills", expanded)
-    };
+    let expanded = expand_path(&local_dir);
 
     let repo_dirs: Vec<(String, String)> = repos
         .into_iter()
         .filter(|r| r.enabled)
-        .map(|r| {
-            let cache = if r.cache_path.is_empty() {
-                dirs::data_dir()
-                    .map(|d| d.join("ai-cockpit").join("repos").join(&r.id))
-                    .map(|p| p.to_string_lossy().to_string())
-                    .unwrap_or_default()
-            } else if r.cache_path.starts_with('~') {
-                let home = dirs::home_dir()
-                    .map(|p| p.to_string_lossy().to_string())
-                    .unwrap_or_default();
-                r.cache_path.replacen("~", &home, 1)
-            } else {
-                r.cache_path.clone()
-            };
-            (r.id, cache)
-        })
+        .map(|r| (r.id.clone(), resolve_repo_cache(&r.cache_path, &r.id)))
         .collect();
 
-    skills_service::build_skill_comparisons(&local_dir, &repo_dirs)
+    skills_service::build_skill_comparisons(&expanded, &repo_dirs)
 }
 
 /// Get file-level diff between local and remote versions of a skill.
