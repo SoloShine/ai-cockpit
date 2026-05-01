@@ -5,6 +5,7 @@ import router from "./router";
 import App from "./App.vue";
 import { pluginRegistry } from "./core/plugin";
 import { usePluginStore } from "./stores/plugin";
+import i18n from "./core/i18n";
 
 // Import and register built-in plugins here
 // import skillsPlugin from "./plugins/skills";
@@ -19,6 +20,7 @@ const app = createApp(App);
 const pinia = createPinia();
 
 app.use(pinia);
+app.use(i18n);
 app.use(router);
 app.use(naive);
 
