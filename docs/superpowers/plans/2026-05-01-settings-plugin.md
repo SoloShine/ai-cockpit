@@ -887,14 +887,17 @@ const languageOptions = [
 </template>
 ```
 
-- [ ] **Step 3: 创建 SettingsView 外壳**
+- [ ] **Step 3: 创建 SettingsView 外壳（支持插件挂载独立 Tab）**
+
+SettingsView 从 pluginRegistry 收集所有带 `SettingsPanel` hook 的插件，为每个插件渲染独立 Tab。
 
 ```vue
 <!-- src/plugins/settings/views/SettingsView.vue -->
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { NTabs, NTabPane } from "naive-ui";
 import { useI18n } from "vue-i18n";
+import { pluginRegistry } from "@/core/plugin";
 import AppearancePanel from "../panels/AppearancePanel.vue";
 import AgentPanel from "../panels/AgentPanel.vue";
 import PluginPanel from "../panels/PluginPanel.vue";
@@ -902,6 +905,21 @@ import AboutPanel from "../panels/AboutPanel.vue";
 
 const { t } = useI18n();
 const activeTab = ref("appearance");
+
+// 收集所有带 SettingsPanel 的插件，为它们生成独立 Tab
+const pluginSettingsTabs = computed(() => {
+  return pluginRegistry.getAll()
+    .filter((p) => {
+      if (p.id === "settings") return false; // 排除设置插件自身
+      const hooks = pluginRegistry.getHooks(p.id);
+      return !!hooks?.SettingsPanel;
+    })
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      component: pluginRegistry.getHooks(p.id)!.SettingsPanel!,
+    }));
+});
 </script>
 
 <template>
@@ -919,6 +937,15 @@ const activeTab = ref("appearance");
       <NTabPane name="agents" :tab="t('settings.tabs.agents')">
         <AgentPanel />
       </NTabPane>
+      <!-- 插件设置 Tab：动态挂载 -->
+      <NTabPane
+        v-for="tab in pluginSettingsTabs"
+        :key="tab.id"
+        :name="`plugin-${tab.id}`"
+        :tab="tab.name"
+      >
+        <component :is="tab.component" />
+      </NTabPane>
       <NTabPane name="plugins" :tab="t('settings.tabs.plugins')">
         <PluginPanel />
       </NTabPane>
@@ -929,6 +956,8 @@ const activeTab = ref("appearance");
   </div>
 </template>
 ```
+
+Tab 顺序：外观 → Agent → [插件设置 Tab...] → 插件管理 → 关于。插件的设置 Tab 插入在"插件管理"之前，保持核心 Tab 在首尾。
 
 - [ ] **Step 4: 提交**
 
@@ -1175,7 +1204,7 @@ git commit -m "feat(settings): add AgentPanel with CRUD and browse support"
 
 ## Task 8: PluginPanel — 插件管理面板
 
-创建插件管理面板，支持启用/禁用、查看详情、查看插件专属设置。拖拽排序暂用上下按钮替代。
+创建插件管理面板，支持启用/禁用、查看详情。插件专属设置现在通过 SettingsView 的独立 Tab 挂载，PluginDetail 只展示插件信息。拖拽排序暂用上下按钮替代。
 
 **Files:**
 - Create: `src/plugins/settings/panels/PluginPanel.vue`
@@ -1184,20 +1213,17 @@ git commit -m "feat(settings): add AgentPanel with CRUD and browse support"
 
 - [ ] **Step 1: 创建 PluginDetail 组件**
 
+PluginDetail 只展示插件信息（路由、描述），插件专属设置由 SettingsView 动态 Tab 提供。
+
 ```vue
 <!-- src/plugins/settings/components/PluginDetail.vue -->
 <script setup lang="ts">
-import { NDescriptions, NDescriptionsItem, NTag, NText, NDivider } from "naive-ui";
+import { NDescriptions, NDescriptionsItem, NTag, NText } from "naive-ui";
 import { useI18n } from "vue-i18n";
-import { pluginRegistry } from "@/core/plugin";
 import type { CockpitPlugin } from "@/core/plugin";
 
 const props = defineProps<{ plugin: CockpitPlugin }>();
 const { t } = useI18n();
-
-// 获取插件的 SettingsPanel hook
-const hooks = pluginRegistry.getHooks(props.plugin.id);
-const SettingsPanel = hooks?.SettingsPanel;
 </script>
 
 <template>
@@ -1214,12 +1240,6 @@ const SettingsPanel = hooks?.SettingsPanel;
         </NTag>
       </NDescriptionsItem>
     </NDescriptions>
-
-    <NDivider v-if="SettingsPanel" style="margin: 12px 0" />
-    <component :is="SettingsPanel" v-if="SettingsPanel" />
-    <NText v-else depth="3" style="margin-top: 8px; display: block">
-      {{ t("settings.plugins.noSettings") }}
-    </NText>
   </div>
 </template>
 ```
