@@ -5,6 +5,10 @@
       "global": "全局 Skills",
       "project": "项目 Skills"
     },
+    "agent": {
+      "select": "选择 Agent",
+      "current": "当前 Agent"
+    },
     "actions": {
       "install": "安装",
       "update": "更新",
@@ -39,6 +43,28 @@
       "files": "文件列表",
       "size": "大小",
       "path": "路径"
+    },
+    "project": {
+      "selectProject": "选择项目",
+      "addProject": "添加项目",
+      "noProjects": "暂无项目，点击上方按钮添加"
+    },
+    "repos": {
+      "title": "Skill 仓库",
+      "addRepo": "添加仓库",
+      "name": "仓库名称",
+      "url": "Git 仓库地址",
+      "cachePath": "本地缓存路径",
+      "enabled": "已启用",
+      "disabled": "已禁用",
+      "noRepos": "暂无仓库，点击上方按钮添加",
+      "nameRequired": "请输入仓库名称",
+      "urlRequired": "请输入仓库地址",
+      "addSuccess": "仓库添加成功",
+      "deleteSuccess": "仓库已删除",
+      "deleteConfirm": "确定要删除此仓库吗？",
+      "cancel": "取消",
+      "delete": "删除"
     },
     "confirm": {
       "uninstall": "确认卸载",

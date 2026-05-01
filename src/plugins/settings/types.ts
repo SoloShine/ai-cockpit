@@ -20,9 +20,18 @@ export interface PluginSettings {
   order: string[];
 }
 
+export interface RepoConfig {
+  id: string;
+  name: string;
+  url: string;
+  cachePath: string;
+  enabled: boolean;
+}
+
 export interface AppSettings {
   appearance: AppearanceSettings;
   agents: AgentConfig[];
+  repos: RepoConfig[];
   plugins: PluginSettings;
   _meta: {
     version: number;

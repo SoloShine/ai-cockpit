@@ -11,11 +11,27 @@ import type {
   SkillOperation,
 } from "./types";
 
+const PROJECT_PATHS_KEY = "skills_project_paths";
+
+function loadProjectPaths(): string[] {
+  try {
+    const raw = localStorage.getItem(PROJECT_PATHS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveProjectPaths(paths: string[]) {
+  localStorage.setItem(PROJECT_PATHS_KEY, JSON.stringify(paths));
+}
+
 export const useSkillsStore = defineStore("skills", () => {
   // State
   const currentAgentId = ref<string>("claude-code");
   const currentScope = ref<SkillScope>("global");
   const currentProjectPath = ref<string>("");
+  const projectPaths = ref<string[]>(loadProjectPaths());
   const globalSkills = ref<Map<string, ScanResult>>(new Map());
   const projectSkills = ref<Map<string, ScanResult>>(new Map());
   const selectedSkills = ref<Set<string>>(new Set());
@@ -41,6 +57,24 @@ export const useSkillsStore = defineStore("skills", () => {
     return store.agents.find((a) => a.id === currentAgentId.value);
   }
 
+  function addProject(path: string) {
+    if (!projectPaths.value.includes(path)) {
+      projectPaths.value.push(path);
+      saveProjectPaths(projectPaths.value);
+    }
+    if (!currentProjectPath.value) {
+      currentProjectPath.value = path;
+    }
+  }
+
+  function removeProject(path: string) {
+    projectPaths.value = projectPaths.value.filter((p) => p !== path);
+    saveProjectPaths(projectPaths.value);
+    if (currentProjectPath.value === path) {
+      currentProjectPath.value = projectPaths.value[0] ?? "";
+    }
+  }
+
   async function scanSkills(agentId: string, scope: SkillScope): Promise<void> {
     const store = useSettingsStore();
     const agent = store.agents.find((a) => a.id === agentId);
@@ -57,14 +91,26 @@ export const useSkillsStore = defineStore("skills", () => {
       if (scope === "global") {
         result = await invoke<ScanResult>("scan_global_skills", {
           agentId,
-          globalPath: agent.globalPath,
+          globalPath: agent.globalPath + "/skills",
         });
         globalSkills.value.set(agentId, result);
       } else {
+        // Project skills: need a selected project
+        if (!currentProjectPath.value) {
+          // No project selected → empty result
+          projectSkills.value.set(agentId, {
+            agentId,
+            scope: "project",
+            skills: [],
+            total: 0,
+          });
+          loading.value = false;
+          return;
+        }
         result = await invoke<ScanResult>("scan_project_skills", {
           agentId,
-          projectPath: agent.projectPath,
-          projectDir: currentProjectPath.value || ".",
+          projectPath: agent.projectPath + "/skills",
+          projectDir: currentProjectPath.value,
         });
         projectSkills.value.set(agentId, result);
       }
@@ -77,31 +123,10 @@ export const useSkillsStore = defineStore("skills", () => {
     }
   }
 
-  async function scanAllAgents(scope: SkillScope): Promise<void> {
-    const agents = availableAgents.value;
-    if (agents.length === 0) return;
-
-    loading.value = true;
-    error.value = null;
-
-    try {
-      await Promise.all(
-        agents.map((agent) => scanSkills(agent.id, scope))
-      );
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      error.value = msg;
-      console.error("[SkillsStore] Failed to scan all agents:", e);
-    } finally {
-      loading.value = false;
-    }
-  }
-
   async function switchAgent(agentId: string): Promise<void> {
     currentAgentId.value = agentId;
     selectedSkills.value.clear();
 
-    // Check if we already have cached data
     const skillsMap =
       currentScope.value === "global" ? globalSkills.value : projectSkills.value;
     if (!skillsMap.has(agentId)) {
@@ -112,7 +137,21 @@ export const useSkillsStore = defineStore("skills", () => {
   async function switchScope(scope: SkillScope): Promise<void> {
     currentScope.value = scope;
     selectedSkills.value.clear();
-    await scanAllAgents(scope);
+
+    const skillsMap =
+      scope === "global" ? globalSkills.value : projectSkills.value;
+    if (!skillsMap.has(currentAgentId.value)) {
+      await scanSkills(currentAgentId.value, scope);
+    }
+  }
+
+  async function selectProject(path: string): Promise<void> {
+    currentProjectPath.value = path;
+    // Clear cached project skills and rescan
+    projectSkills.value.clear();
+    if (currentScope.value === "project") {
+      await scanSkills(currentAgentId.value, "project");
+    }
   }
 
   async function installSkill(source: string, targetPath: string): Promise<void> {
@@ -120,11 +159,7 @@ export const useSkillsStore = defineStore("skills", () => {
     error.value = null;
 
     try {
-      await invoke<OperationResult>("install_skill", {
-        source,
-        targetPath,
-      });
-      // Rescan after operation
+      await invoke<OperationResult>("install_skill", { source, targetPath });
       await scanSkills(currentAgentId.value, currentScope.value);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -140,11 +175,7 @@ export const useSkillsStore = defineStore("skills", () => {
     error.value = null;
 
     try {
-      await invoke<OperationResult>("update_skill", {
-        source,
-        targetPath,
-      });
-      // Rescan after operation
+      await invoke<OperationResult>("update_skill", { source, targetPath });
       await scanSkills(currentAgentId.value, currentScope.value);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -160,10 +191,7 @@ export const useSkillsStore = defineStore("skills", () => {
     error.value = null;
 
     try {
-      await invoke<OperationResult>("uninstall_skill", {
-        skillPath,
-      });
-      // Rescan after operation
+      await invoke<OperationResult>("uninstall_skill", { skillPath });
       await scanSkills(currentAgentId.value, currentScope.value);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -179,10 +207,7 @@ export const useSkillsStore = defineStore("skills", () => {
     error.value = null;
 
     try {
-      const results = await invoke<OperationResult[]>("batch_operate", {
-        operations,
-      });
-      // Rescan after operation
+      const results = await invoke<OperationResult[]>("batch_operate", { operations });
       await scanSkills(currentAgentId.value, currentScope.value);
       return results;
     } catch (e) {
@@ -217,6 +242,7 @@ export const useSkillsStore = defineStore("skills", () => {
     currentAgentId,
     currentScope,
     currentProjectPath,
+    projectPaths,
     globalSkills,
     projectSkills,
     selectedSkills,
@@ -230,9 +256,11 @@ export const useSkillsStore = defineStore("skills", () => {
     // Methods
     getCurrentAgentConfig,
     scanSkills,
-    scanAllAgents,
     switchAgent,
     switchScope,
+    selectProject,
+    addProject,
+    removeProject,
     installSkill,
     updateSkill,
     uninstallSkill,

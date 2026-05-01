@@ -11,19 +11,29 @@ fn dirs_home() -> String {
         .unwrap_or_else(|| String::from("~"))
 }
 
+/// Expand a path: ~ → home dir, relative → prepend home dir, absolute → as-is
+fn expand_path(path: &str) -> String {
+    if path.is_empty() {
+        return path.to_string();
+    }
+    if path.starts_with('~') {
+        return path.replacen("~", &dirs_home(), 1);
+    }
+    // Absolute path (Unix / or Windows C:\)
+    if path.starts_with('/') || (path.len() >= 2 && path.as_bytes()[1] == b':') {
+        return path.to_string();
+    }
+    // Relative path → prepend home directory
+    format!("{}/{}", dirs_home(), path)
+}
+
 /// Scan global skills for an agent
 #[tauri::command]
 pub async fn scan_global_skills(
     agent_id: String,
     global_path: String,
 ) -> Result<ScanResult, String> {
-    // Expand ~ or relative paths
-    let expanded = if global_path.starts_with("~/") {
-        global_path.replacen("~", &dirs_home(), 1)
-    } else {
-        global_path
-    };
-
+    let expanded = expand_path(&global_path);
     skills_service::scan_skills(&expanded, &agent_id, SkillScope::Global)
 }
 
@@ -31,10 +41,21 @@ pub async fn scan_global_skills(
 #[tauri::command]
 pub async fn scan_project_skills(
     agent_id: String,
-    _project_path: String,
+    project_path: String,
     project_dir: String,
 ) -> Result<ScanResult, String> {
-    skills_service::scan_skills(&project_dir, &agent_id, SkillScope::Project)
+    // project_dir = selected project root, project_path = agent's relative skill dir
+    let full_path = if project_dir.is_empty() {
+        return Ok(ScanResult {
+            agent_id,
+            scope: SkillScope::Project,
+            skills: Vec::new(),
+            total: 0,
+        });
+    } else {
+        format!("{}/{}", project_dir, project_path)
+    };
+    skills_service::scan_skills(&full_path, &agent_id, SkillScope::Project)
 }
 
 /// Get file tree for a skill

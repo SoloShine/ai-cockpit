@@ -2,7 +2,7 @@
 import { defineStore } from "pinia";
 import { ref, watch } from "vue";
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, AppearanceSettings, AgentConfig, PluginSettings } from "./types";
+import type { AppSettings, AppearanceSettings, AgentConfig, PluginSettings, RepoConfig } from "./types";
 import i18n from "@/core/i18n";
 
 const DEFAULT_APPEARANCE: AppearanceSettings = {
@@ -19,9 +19,9 @@ const DEFAULT_AGENTS: AgentConfig[] = [
   { id: "codex", name: "OpenAI Codex", type: "codex", globalPath: ".codex", projectPath: ".codex", enabled: true, isCustom: false },
   { id: "cline", name: "Cline", type: "cline", globalPath: "Documents/Cline/Rules", projectPath: ".clinerules", enabled: true, isCustom: false },
   { id: "augment", name: "Augment", type: "augment", globalPath: ".augment", projectPath: ".augment", enabled: true, isCustom: false },
-  { id: "aider", name: "Aider", type: "aider", globalPath: ".aider.conf.yml", projectPath: ".aider.conf.yml", enabled: true, isCustom: false },
-  { id: "copilot", name: "GitHub Copilot", type: "copilot", globalPath: "", projectPath: ".github", enabled: true, isCustom: false },
-  { id: "trae", name: "Trae", type: "trae", globalPath: "", projectPath: ".trae", enabled: true, isCustom: false },
+  { id: "aider", name: "Aider", type: "aider", globalPath: ".aider", projectPath: ".aider", enabled: true, isCustom: false },
+  { id: "copilot", name: "GitHub Copilot", type: "copilot", globalPath: "github/copilot", projectPath: ".github", enabled: true, isCustom: false },
+  { id: "trae", name: "Trae", type: "trae", globalPath: ".trae", projectPath: ".trae", enabled: true, isCustom: false },
 ];
 
 const DEFAULT_PLUGINS: PluginSettings = {
@@ -29,10 +29,13 @@ const DEFAULT_PLUGINS: PluginSettings = {
   order: [],
 };
 
+const DEFAULT_REPOS: RepoConfig[] = [];
+
 export const useSettingsStore = defineStore("settings", () => {
   const loaded = ref(false);
   const appearance = ref<AppearanceSettings>({ ...DEFAULT_APPEARANCE });
   const agents = ref<AgentConfig[]>([...DEFAULT_AGENTS]);
+  const repos = ref<RepoConfig[]>([...DEFAULT_REPOS]);
   const plugins = ref<PluginSettings>({ ...DEFAULT_PLUGINS });
 
   let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -42,6 +45,7 @@ export const useSettingsStore = defineStore("settings", () => {
       const settings = await invoke<AppSettings>("load_settings");
       appearance.value = settings.appearance;
       agents.value = settings.agents;
+      repos.value = settings.repos ?? [];
       plugins.value = settings.plugins;
     } catch (e) {
       console.warn("[SettingsStore] 加载设置失败，使用默认值:", e);
@@ -55,6 +59,7 @@ export const useSettingsStore = defineStore("settings", () => {
     const settings: AppSettings = {
       appearance: appearance.value,
       agents: agents.value,
+      repos: repos.value,
       plugins: plugins.value,
       _meta: { version: 1, updatedAt: new Date().toISOString() },
     };
@@ -70,7 +75,7 @@ export const useSettingsStore = defineStore("settings", () => {
     saveTimeout = setTimeout(() => save(), 500);
   }
 
-  watch([appearance, agents, plugins], () => scheduleSave(), { deep: true });
+  watch([appearance, agents, repos, plugins], () => scheduleSave(), { deep: true });
 
   // 同步语言设置到 i18n
   watch(
@@ -121,10 +126,26 @@ export const useSettingsStore = defineStore("settings", () => {
     plugins.value.order = order;
   }
 
+  function addRepo(repo: RepoConfig) {
+    repos.value.push(repo);
+  }
+
+  function removeRepo(id: string) {
+    repos.value = repos.value.filter((r) => r.id !== id);
+  }
+
+  function updateRepo(id: string, updates: Partial<RepoConfig>) {
+    const idx = repos.value.findIndex((r) => r.id === id);
+    if (idx !== -1) {
+      repos.value[idx] = { ...repos.value[idx], ...updates };
+    }
+  }
+
   return {
     loaded,
     appearance,
     agents,
+    repos,
     plugins,
     load,
     save,
@@ -134,6 +155,9 @@ export const useSettingsStore = defineStore("settings", () => {
     addAgent,
     removeAgent,
     updateAgent,
+    addRepo,
+    removeRepo,
+    updateRepo,
     togglePlugin,
     updatePluginOrder,
   };

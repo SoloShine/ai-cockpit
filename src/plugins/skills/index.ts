@@ -1,8 +1,8 @@
 // src/plugins/skills/index.ts
 import { RocketOutline } from "@vicons/ionicons5";
 import type { PluginModule } from "@/core/plugin";
-import { useSkillsStore } from "./store";
 import i18n from "@/core/i18n";
+import RepoPanel from "./components/RepoPanel.vue";
 
 import zhCN from "./i18n/zh-CN.json";
 import enUS from "./i18n/en-US.json";
@@ -35,9 +35,9 @@ const plugin: PluginModule = {
       i18n.global.mergeLocaleMessage("en-US", enUS);
     },
     async onActivate() {
-      const store = useSkillsStore();
-      await store.scanAllAgents(store.currentScope);
+      // Scan is handled by SkillsMainView's onMounted to avoid duplicate calls
     },
+    SettingsPanel: RepoPanel,
   },
 };
 
