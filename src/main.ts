@@ -8,6 +8,7 @@ import { usePluginStore } from "./stores/plugin";
 import i18n from "./core/i18n";
 
 import settingsModule from "./plugins/settings";
+import skillsModule from "./plugins/skills";
 
 async function bootstrap() {
   const app = createApp(App);
@@ -19,6 +20,7 @@ async function bootstrap() {
 
   // 注册插件
   pluginRegistry.register(settingsModule);
+  pluginRegistry.register(skillsModule);
 
   // 动态添加路由
   for (const route of pluginRegistry.getRoutes()) {
