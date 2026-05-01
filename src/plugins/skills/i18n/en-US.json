@@ -1,0 +1,50 @@
+{
+  "skills": {
+    "title": "Skill Manager",
+    "scope": {
+      "global": "Global Skills",
+      "project": "Project Skills"
+    },
+    "actions": {
+      "install": "Install",
+      "update": "Update",
+      "uninstall": "Uninstall",
+      "batch": "Batch Actions",
+      "detail": "Detail"
+    },
+    "status": {
+      "empty": "No Skills",
+      "emptyHint": "No skill files found in current agent directory",
+      "loading": "Scanning...",
+      "error": "Scan failed",
+      "selected": "{count} selected",
+      "total": "{count} Skills total"
+    },
+    "card": {
+      "files": "{count} files",
+      "noMeta": "No metadata",
+      "hash": "Hash"
+    },
+    "empty": {
+      "noPath": "Path not configured",
+      "noPathHint": "Please configure the Skill path for this agent in Settings",
+      "goSettings": "Go to Settings",
+      "noSkills": "No Skills Found",
+      "noSkillsHint": "No skill files found in current directory",
+      "scanError": "Scan Error",
+      "retry": "Retry"
+    },
+    "detail": {
+      "title": "Skill Detail",
+      "files": "Files",
+      "size": "Size",
+      "path": "Path"
+    },
+    "confirm": {
+      "uninstall": "Confirm Uninstall",
+      "uninstallMsg": "Are you sure you want to uninstall skill \"{name}\"? This cannot be undone.",
+      "batchUninstall": "Confirm Batch Uninstall",
+      "batchUninstallMsg": "Are you sure you want to uninstall {count} selected skills?"
+    }
+  }
+}
