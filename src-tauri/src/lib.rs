@@ -12,6 +12,8 @@ pub fn run() {
             commands::core::get_app_version,
             commands::settings::load_settings,
             commands::settings::save_settings,
+            commands::settings::get_data_dir,
+            commands::settings::open_in_explorer,
         ])
         .run(tauri::generate_context!())
         .expect("error while running AI Cockpit");
