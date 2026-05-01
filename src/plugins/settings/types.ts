@@ -9,7 +9,8 @@ export interface AgentConfig {
   id: string;
   name: string;
   type: string;
-  basePath: string;
+  globalPath: string;
+  projectPath: string;
   enabled: boolean;
   isCustom: boolean;
 }

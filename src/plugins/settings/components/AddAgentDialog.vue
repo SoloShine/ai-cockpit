@@ -17,26 +17,32 @@ const message = useMessage();
 
 const name = ref("");
 const agentType = ref("");
-const basePath = ref("");
+const globalPath = ref("");
+const projectPath = ref("");
 
 function handleSubmit() {
   if (!name.value.trim()) { message.warning(t("settings.agents.nameRequired")); return; }
   if (!agentType.value.trim()) { message.warning(t("settings.agents.typeRequired")); return; }
-  if (!basePath.value.trim()) { message.warning(t("settings.agents.pathRequired")); return; }
+  if (!globalPath.value.trim() && !projectPath.value.trim()) {
+    message.warning(t("settings.agents.pathRequired"));
+    return;
+  }
 
   const id = `custom-${Date.now()}`;
   emit("add", {
     id,
     name: name.value.trim(),
     type: agentType.value.trim(),
-    basePath: basePath.value.trim(),
+    globalPath: globalPath.value.trim(),
+    projectPath: projectPath.value.trim(),
     enabled: true,
     isCustom: true,
   });
 
   name.value = "";
   agentType.value = "";
-  basePath.value = "";
+  globalPath.value = "";
+  projectPath.value = "";
   emit("update:show", false);
   message.success(t("settings.agents.addSuccess"));
 }
@@ -60,8 +66,11 @@ function handleSubmit() {
         <NFormItem :label="t('settings.agents.type')">
           <NInput v-model:value="agentType" placeholder="my-agent" />
         </NFormItem>
-        <NFormItem :label="t('settings.agents.basePath')">
-          <NInput v-model:value="basePath" />
+        <NFormItem :label="t('settings.agents.globalPath')">
+          <NInput v-model:value="globalPath" placeholder="~/.xxx" />
+        </NFormItem>
+        <NFormItem :label="t('settings.agents.projectPath')">
+          <NInput v-model:value="projectPath" placeholder="./.xxx" />
         </NFormItem>
       </NForm>
       <template #footer>

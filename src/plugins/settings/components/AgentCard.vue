@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NCard, NSwitch, NInput, NTag, NSpace } from "naive-ui";
+import { NCard, NSwitch, NInput, NTag, NSpace, NText } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import type { AgentConfig } from "../types";
 
@@ -21,21 +21,31 @@ const { t } = useI18n();
         </NTag>
       </NSpace>
     </template>
-    <NSpace vertical>
-      <NSpace align="center">
+    <NSpace vertical :size="12">
+      <NSpace align="center" :wrap="false">
+        <NText style="width: 70px; flex-shrink: 0">{{ t("settings.agents.globalPath") }}</NText>
         <NInput
-          :value="agent.basePath"
-          :placeholder="t('settings.agents.basePath')"
-          style="flex: 1"
-          @update:value="emit('update:agent', { basePath: $event })"
+          :value="agent.globalPath"
+          :placeholder="t('settings.agents.globalPathPlaceholder')"
+          size="small"
+          @update:value="emit('update:agent', { globalPath: $event })"
         />
       </NSpace>
-      <NSpace justify="space-between" align="center">
-        <NSwitch
-          :value="agent.enabled"
-          @update:value="emit('update:agent', { enabled: $event })"
+      <NSpace align="center" :wrap="false">
+        <NText style="width: 70px; flex-shrink: 0">{{ t("settings.agents.projectPath") }}</NText>
+        <NInput
+          :value="agent.projectPath"
+          :placeholder="t('settings.agents.projectPathPlaceholder')"
+          size="small"
+          @update:value="emit('update:agent', { projectPath: $event })"
         />
       </NSpace>
+      <NSwitch
+        :value="agent.enabled"
+        @update:value="emit('update:agent', { enabled: $event })"
+      >
+        <template #checked>{{ t("settings.agents.enabled") }}</template>
+      </NSwitch>
     </NSpace>
   </NCard>
 </template>

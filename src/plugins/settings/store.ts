@@ -12,11 +12,16 @@ const DEFAULT_APPEARANCE: AppearanceSettings = {
 };
 
 const DEFAULT_AGENTS: AgentConfig[] = [
-  { id: "claude-code", name: "Claude Code", type: "claude-code", basePath: ".claude", enabled: true, isCustom: false },
-  { id: "cursor", name: "Cursor", type: "cursor", basePath: ".cursor", enabled: true, isCustom: false },
-  { id: "windsurf", name: "Windsurf", type: "windsurf", basePath: ".windsurf", enabled: true, isCustom: false },
-  { id: "opencode", name: "OpenCode", type: "opencode", basePath: ".config/opencode", enabled: true, isCustom: false },
-  { id: "codex", name: "Codex", type: "codex", basePath: ".codex", enabled: true, isCustom: false },
+  { id: "claude-code", name: "Claude Code", type: "claude-code", globalPath: ".claude", projectPath: ".claude", enabled: true, isCustom: false },
+  { id: "cursor", name: "Cursor", type: "cursor", globalPath: ".cursor", projectPath: ".cursor", enabled: true, isCustom: false },
+  { id: "windsurf", name: "Windsurf", type: "windsurf", globalPath: ".codeium/windsurf", projectPath: ".windsurf", enabled: true, isCustom: false },
+  { id: "opencode", name: "OpenCode", type: "opencode", globalPath: ".config/opencode", projectPath: ".opencode", enabled: true, isCustom: false },
+  { id: "codex", name: "OpenAI Codex", type: "codex", globalPath: ".codex", projectPath: ".codex", enabled: true, isCustom: false },
+  { id: "cline", name: "Cline", type: "cline", globalPath: "Documents/Cline/Rules", projectPath: ".clinerules", enabled: true, isCustom: false },
+  { id: "augment", name: "Augment", type: "augment", globalPath: ".augment", projectPath: ".augment", enabled: true, isCustom: false },
+  { id: "aider", name: "Aider", type: "aider", globalPath: ".aider.conf.yml", projectPath: ".aider.conf.yml", enabled: true, isCustom: false },
+  { id: "copilot", name: "GitHub Copilot", type: "copilot", globalPath: "", projectPath: ".github", enabled: true, isCustom: false },
+  { id: "trae", name: "Trae", type: "trae", globalPath: "", projectPath: ".trae", enabled: true, isCustom: false },
 ];
 
 const DEFAULT_PLUGINS: PluginSettings = {
