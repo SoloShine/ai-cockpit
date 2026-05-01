@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { usePluginStore } from "@/stores/plugin";
+import { useSettingsStore } from "@/plugins/settings/store";
 import { NLayoutSider, NMenu, NIcon, NDivider, NText } from "naive-ui";
 import type { MenuOption } from "naive-ui";
 import {
@@ -12,6 +13,7 @@ import type { Component } from "vue";
 
 const router = useRouter();
 const pluginStore = usePluginStore();
+const settingsStore = useSettingsStore();
 
 function renderIcon(icon: string | Component): (() => Component) | undefined {
   if (typeof icon === "string") return undefined;
@@ -19,7 +21,9 @@ function renderIcon(icon: string | Component): (() => Component) | undefined {
 }
 
 const pluginMenuOptions = computed<MenuOption[]>(() =>
-  pluginStore.navGroups.map(({ pluginId, items }) => {
+  pluginStore.navGroups
+    .filter(({ pluginId }) => !settingsStore.plugins.disabledIds.includes(pluginId))
+    .map(({ pluginId, items }) => {
     if (items.length === 1) {
       const item = items[0];
       return {
