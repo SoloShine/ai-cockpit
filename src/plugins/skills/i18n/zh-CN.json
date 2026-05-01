@@ -80,6 +80,25 @@
       "uninstallMsg": "确定要卸载 Skill \"{name}\" 吗？此操作不可恢复。",
       "batchUninstall": "确认批量卸载",
       "batchUninstallMsg": "确定要卸载选中的 {count} 个 Skill 吗？"
+    },
+    "compare": {
+      "status": "状态",
+      "statusSame": "相同",
+      "statusOutdated": "过时",
+      "statusLocalOnly": "仅本地",
+      "statusRemoteOnly": "仅远程",
+      "name": "名称",
+      "sourceRepo": "来源仓库",
+      "localVersion": "本地版本",
+      "remoteVersion": "远程版本",
+      "description": "描述",
+      "actions": "操作",
+      "viewDiff": "查看差异",
+      "reinstall": "重新安装",
+      "reinstallTip": "重新安装最新版本",
+      "preview": "预览",
+      "batchInstall": "批量安装",
+      "batchUpdate": "批量更新"
     }
   }
 }
