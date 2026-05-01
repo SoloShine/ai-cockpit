@@ -1,0 +1,53 @@
+{
+  "settings": {
+    "title": "设置",
+    "tabs": {
+      "appearance": "外观与语言",
+      "agents": "Agent 配置",
+      "plugins": "插件管理",
+      "about": "关于"
+    },
+    "appearance": {
+      "theme": "主题",
+      "themeLight": "亮色",
+      "themeDark": "暗色",
+      "themeSystem": "跟随系统",
+      "language": "语言",
+      "fontSize": "字体大小"
+    },
+    "agents": {
+      "title": "Agent 列表",
+      "addCustom": "添加自定义 Agent",
+      "name": "名称",
+      "type": "类型标识",
+      "basePath": "配置路径",
+      "browse": "浏览",
+      "enabled": "已启用",
+      "delete": "删除",
+      "deleteConfirm": "确定要删除此 Agent 配置吗？",
+      "builtIn": "内置",
+      "custom": "自定义",
+      "nameRequired": "请输入 Agent 名称",
+      "typeRequired": "请输入类型标识",
+      "pathRequired": "请选择或输入配置路径",
+      "addSuccess": "Agent 添加成功",
+      "deleteSuccess": "Agent 已删除"
+    },
+    "plugins": {
+      "title": "已安装插件",
+      "enabled": "已启用",
+      "disabled": "已禁用",
+      "noSettings": "此插件暂无专属设置",
+      "routes": "注册路由",
+      "settingsPluginProtected": "设置插件不可禁用"
+    },
+    "about": {
+      "version": "版本",
+      "dataDir": "数据目录",
+      "openInExplorer": "在资源管理器中打开",
+      "checkUpdates": "检查更新",
+      "openLogs": "打开日志目录",
+      "techStack": "技术栈"
+    }
+  }
+}
