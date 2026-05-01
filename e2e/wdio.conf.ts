@@ -87,6 +87,11 @@ export const config = {
       "bin",
       isWindows ? "tauri-driver.exe" : "tauri-driver"
     );
+    if (!fs.existsSync(driverPath)) {
+      throw new Error(
+        `tauri-driver not found at ${driverPath}. Install with: cargo install tauri-driver --locked`
+      );
+    }
     console.log("Starting tauri-driver:", driverPath);
     tauriDriver = spawn(driverPath, [], {
       stdio: [null, process.stdout, process.stderr],
