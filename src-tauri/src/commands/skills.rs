@@ -154,7 +154,7 @@ pub async fn verify_skill_integrity(
 /// Compare local skills against remote repos.
 #[tauri::command]
 pub async fn compare_skills(
-    agent_id: String,
+    _agent_id: String,
     scope: String,
     global_path: String,
     project_path: String,
