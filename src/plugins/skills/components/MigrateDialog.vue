@@ -224,6 +224,7 @@ watch(() => store.showMigrateDialog, (open) => {
             :value="sourceAgentId"
             :options="sourceAgentOptions"
             :placeholder="t('skills.migrate.sourceAgentPlaceholder')"
+            to="body"
             @update:value="handleAgentSelect"
             style="margin-top: 12px"
           />
