@@ -17,6 +17,7 @@ import {
 } from "naive-ui";
 import { useSkillsStore } from "../store";
 import { useSettingsStore } from "@/plugins/settings/store";
+import { useColumnResize } from "../composables/useColumnResize";
 import type { SkillComparison, SkillOperation, ComparisonStatus } from "../types";
 
 const emit = defineEmits<{
@@ -31,6 +32,29 @@ const settingsStore = useSettingsStore();
 
 const checkedRowKeys = ref<DataTableRowKey[]>([]);
 const operatingKeys = ref<Set<string>>(new Set());
+
+// Column resize support
+const { getColumnWidth, handleResizeMousedown } = useColumnResize(
+  "skill-compare-table",
+  { status: 120, name: 200, sourceRepo: 150, localVersion: 100, remoteVersion: 100, actions: 180 },
+);
+
+/** Render a resizable column header with drag handle */
+function resizableHeader(key: string, titleText: string) {
+  return h(
+    "div",
+    {
+      style: "position: relative; padding-right: 10px; display: flex; align-items: center; justify-content: space-between; width: 100%",
+    },
+    [
+      h("span", titleText),
+      h("div", {
+        class: "col-resize-handle",
+        onMousedown: (e: MouseEvent) => handleResizeMousedown(key, e),
+      }),
+    ],
+  );
+}
 
 // Helper to get home directory
 async function getHome(): Promise<string> {
@@ -64,27 +88,27 @@ const columns = computed<DataTableColumns<SkillComparison>>(() => [
     multiple: true,
   },
   {
-    title: t("skills.compare.status"),
+    title: () => resizableHeader("status", t("skills.compare.status")),
     key: "status",
-    width: 120,
+    width: getColumnWidth("status"),
     render: (row) => {
       const { type, label } = getStatusTagType(row.status);
       return h(NTag, { type }, { default: () => label });
     },
   },
   {
-    title: t("skills.compare.name"),
+    title: () => resizableHeader("name", t("skills.compare.name")),
     key: "name",
-    width: 200,
+    width: getColumnWidth("name"),
     render: (row) => {
       const meta = row.local?.meta || row.remote?.meta;
       return meta?.name || row.name;
     },
   },
   {
-    title: t("skills.compare.sourceRepo"),
+    title: () => resizableHeader("sourceRepo", t("skills.compare.sourceRepo")),
     key: "sourceRepo",
-    width: 150,
+    width: getColumnWidth("sourceRepo"),
     render: (row) => {
       const repoId = row.sourceRepo;
       if (!repoId) return h(NText, { depth: 3 }, () => "-");
@@ -94,15 +118,15 @@ const columns = computed<DataTableColumns<SkillComparison>>(() => [
     },
   },
   {
-    title: t("skills.compare.localVersion"),
+    title: () => resizableHeader("localVersion", t("skills.compare.localVersion")),
     key: "localVersion",
-    width: 100,
+    width: getColumnWidth("localVersion"),
     render: (row) => row.local?.meta?.version || "-",
   },
   {
-    title: t("skills.compare.remoteVersion"),
+    title: () => resizableHeader("remoteVersion", t("skills.compare.remoteVersion")),
     key: "remoteVersion",
-    width: 100,
+    width: getColumnWidth("remoteVersion"),
     render: (row) => row.remote?.meta?.version || "-",
   },
   {
@@ -398,5 +422,22 @@ async function handleBatchUpdate() {
 <style scoped>
 .skill-compare-table {
   width: 100%;
+}
+</style>
+
+<style>
+/* Global styles for resize handles (scoped styles won't reach NDataTable internals) */
+.col-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 1;
+  transition: background 0.15s;
+}
+.col-resize-handle:hover {
+  background: rgba(0, 0, 0, 0.12);
 }
 </style>

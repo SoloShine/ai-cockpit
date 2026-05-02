@@ -57,6 +57,12 @@ export interface ProjectOverview {
   projectPath: string;
   projectName: string;
   agentSkillsCount: Record<string, number>;
+  localCount: number;
+  sameCount: number;
+  outdatedCount: number;
+  remoteOnlyCount: number;
+  lastModified?: string;
+  readmePreview?: string;
 }
 
 /** Result of syncing a single repository */

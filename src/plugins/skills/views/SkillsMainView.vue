@@ -51,7 +51,7 @@ function handlePreview(skillPath: string, skillName: string) {
 </script>
 
 <template>
-  <div style="height: 100%; display: flex; flex-direction: column">
+  <div data-testid="skills-main-page" style="height: 100%; display: flex; flex-direction: column">
     <NSpace vertical :size="16" style="flex: 1; overflow: auto">
       <NSpace justify="space-between" align="center">
         <NText strong style="font-size: 18px">{{ t("skills.title") }}</NText>
@@ -60,11 +60,11 @@ function handlePreview(skillPath: string, skillName: string) {
             <template #icon><NIcon :component="SyncOutline" /></template>
             {{ settingsStore.syncing ? t("skills.sync.syncing") : t("skills.sync.syncAll") }}
           </NButton>
-          <NButton size="small" @click="store.showHistoryPanel = true">
+          <NButton size="small" data-testid="btn-history" @click="store.showHistoryPanel = true">
             <template #icon><NIcon :component="TimeOutline" /></template>
             {{ t("skills.history.title") }}
           </NButton>
-          <NButton size="small" @click="store.showMigrateDialog = true">
+          <NButton size="small" data-testid="btn-migrate" @click="store.showMigrateDialog = true">
             <template #icon><NIcon :component="SwapHorizontalOutline" /></template>
             {{ t("skills.migrate.title") }}
           </NButton>

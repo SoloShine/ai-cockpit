@@ -29,6 +29,7 @@ pub fn run() {
             commands::skills::read_skill_file,
             commands::skills::calculate_skill_hash,
             commands::skills::get_projects_overview,
+            commands::skills::get_rich_projects_overview,
             // Skills — Batch 2: Operations
             commands::skills::install_skill,
             commands::skills::update_skill,

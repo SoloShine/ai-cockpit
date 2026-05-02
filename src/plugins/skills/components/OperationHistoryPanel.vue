@@ -69,7 +69,7 @@ watch(() => props.show, async (show) => {
 </script>
 
 <template>
-  <NDrawer :show="props.show" :width="420" placement="right" @update:show="(v) => !v && emit('close')">
+  <NDrawer data-testid="history-drawer" :show="props.show" :width="420" placement="right" @update:show="(v) => !v && emit('close')">
     <NDrawerContent>
       <template #header>
         <NSpace justify="space-between" align="center" style="width: 100%">

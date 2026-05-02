@@ -16,6 +16,7 @@ import type {
   MigrateSkillItem,
   ConflictResolution,
   MigrateResult,
+  ProjectOverview,
 } from "./types";
 
 const PROJECT_PATHS_KEY = "skills_project_paths";
@@ -55,6 +56,10 @@ export const useSkillsStore = defineStore("skills", () => {
   const showMigrateDialog = ref(false);
   const migrateSkills = ref<MigrateSkillItem[]>([]);
   const migrating = ref(false);
+
+  // Projects overview state
+  const projectsOverview = ref<ProjectOverview[]>([]);
+  const loadingProjects = ref(false);
 
   // Computed
   const currentSkills = computed<SkillInfo[]>(() => {
@@ -443,6 +448,37 @@ export const useSkillsStore = defineStore("skills", () => {
     migrateSkills.value = [];
   }
 
+  // --- Projects Overview ---
+
+  async function loadProjectsOverview(): Promise<void> {
+    if (projectPaths.value.length === 0) {
+      projectsOverview.value = [];
+      return;
+    }
+
+    const settingsStore = useSettingsStore();
+    const agent = getCurrentAgentConfig();
+    if (!agent) return;
+
+    loadingProjects.value = true;
+    try {
+      projectsOverview.value = await invoke<ProjectOverview[]>(
+        "get_rich_projects_overview",
+        {
+          projectPaths: projectPaths.value,
+          agentId: currentAgentId.value,
+          projectPattern: agent.projectPath,
+          repos: settingsStore.repos,
+        },
+      );
+    } catch (e) {
+      console.error("[SkillsStore] Failed to load projects overview:", e);
+      projectsOverview.value = [];
+    } finally {
+      loadingProjects.value = false;
+    }
+  }
+
   return {
     // State
     currentAgentId,
@@ -502,5 +538,10 @@ export const useSkillsStore = defineStore("skills", () => {
     scanAgentSkills,
     executeMigration,
     clearMigration,
+
+    // Projects Overview
+    projectsOverview,
+    loadingProjects,
+    loadProjectsOverview,
   };
 });

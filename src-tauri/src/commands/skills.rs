@@ -110,6 +110,29 @@ pub async fn get_projects_overview(
     )
 }
 
+/// Get rich overview of projects with comparison counts, README preview, and last-modified.
+/// Scans remote repos only once for all projects.
+#[tauri::command]
+pub async fn get_rich_projects_overview(
+    project_paths: Vec<String>,
+    agent_id: String,
+    project_pattern: String,
+    repos: Vec<RepoConfig>,
+) -> Result<Vec<ProjectOverview>, String> {
+    let repo_dirs: Vec<(String, String)> = repos
+        .into_iter()
+        .filter(|r| r.enabled)
+        .map(|r| (r.id.clone(), resolve_repo_cache(&r.cache_path, &r.id)))
+        .collect();
+
+    skills_service::get_rich_projects_overview(
+        &project_paths,
+        &agent_id,
+        &project_pattern,
+        &repo_dirs,
+    )
+}
+
 /// Install a skill
 #[tauri::command]
 pub async fn install_skill(

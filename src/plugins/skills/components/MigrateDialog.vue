@@ -190,7 +190,7 @@ watch(() => store.showMigrateDialog, (open) => {
 </script>
 
 <template>
-  <NModal :show="store.showMigrateDialog" @update:show="(v) => !v && handleClose()">
+  <NModal data-testid="migrate-dialog" :show="store.showMigrateDialog" @update:show="(v) => !v && handleClose()">
     <div class="migrate-dialog">
       <!-- Header -->
       <div class="migrate-header">

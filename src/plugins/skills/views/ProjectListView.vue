@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { NCard, NSpace, NText, NButton, NEmpty, NPopconfirm, NTag, NInput, NSpin, useMessage } from "naive-ui";
+import { NCard, NSpace, NText, NButton, NEmpty, NPopconfirm, NTag, NInput, NSkeleton, useMessage } from "naive-ui";
 import { AddOutline, SyncOutline } from "@vicons/ionicons5";
 import { useI18n } from "vue-i18n";
 import { useSkillsStore } from "../store";
-import { invoke } from "@tauri-apps/api/core";
 import { useSettingsStore } from "@/plugins/settings/store";
-import type { SkillComparison } from "../types";
 
 const { t } = useI18n();
 const router = useRouter();
@@ -15,76 +13,33 @@ const store = useSkillsStore();
 const settingsStore = useSettingsStore();
 const message = useMessage();
 
-interface ProjectSummary {
-  path: string;
-  name: string;
-  comparisons: SkillComparison[];
-  readme: string;
-  loading: boolean;
-}
-
-const summaries = ref<ProjectSummary[]>([]);
 const addingPath = ref("");
 const showAddForm = ref(false);
+import { ref } from "vue";
 
-const README_NAMES = ["README.md", "readme.md", "Readme.md", "README", "readme"];
-
-async function tryReadReadme(projectPath: string): Promise<string> {
-  for (const name of README_NAMES) {
-    try {
-      const content = await invoke<string>("read_skill_file", {
-        filePath: `${projectPath}/${name}`,
-      });
-      if (content) return content.trim().split("\n").slice(0, 5).join("\n");
-    } catch {
-      // Not found, try next
-    }
-  }
-  return "";
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
-  ]);
-}
-
-async function loadProjectSummary(s: ProjectSummary) {
-  // Load comparisons with timeout
+/** Format ISO timestamp to relative time string */
+function formatRelativeTime(isoString: string): string {
   try {
-    const localDir = store.resolveLocalDir("project", s.path);
-    if (localDir) {
-      s.comparisons = await withTimeout(
-        invoke<SkillComparison[]>("compare_skills", {
-          localDir,
-          repos: settingsStore.repos,
-        }),
-        10000,
-      );
-    }
-  } catch (e) {
-    console.warn("[ProjectListView] compare_skills failed for", s.path, e);
-  }
-  // Load README with timeout
-  try {
-    s.readme = await withTimeout(tryReadReadme(s.path), 3000);
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffSec < 60) return t("skills.project.justNow");
+    if (diffMin < 60) return t("skills.project.minutesAgo", { count: diffMin });
+    if (diffHour < 24) return t("skills.project.hoursAgo", { count: diffHour });
+    if (diffDay < 30) return t("skills.project.daysAgo", { count: diffDay });
+    return date.toLocaleDateString();
   } catch {
-    // No readme
+    return isoString;
   }
-  s.loading = false;
 }
 
 async function loadSummaries() {
-  const results: ProjectSummary[] = [];
-  for (const p of store.projectPaths) {
-    const name = p.split(/[/\\]/).pop() ?? p;
-    results.push({ path: p, name, comparisons: [], readme: "", loading: true });
-  }
-  summaries.value = results;
-
-  // Load all projects concurrently
-  await Promise.all(results.map(loadProjectSummary));
+  await store.loadProjectsOverview();
 }
 
 function handleSync() {
@@ -94,16 +49,6 @@ function handleSync() {
 }
 
 onMounted(loadSummaries);
-
-function getCounts(comparisons: SkillComparison[]) {
-  return {
-    outdated: comparisons.filter(c => c.status === "outdated").length,
-    remoteOnly: comparisons.filter(c => c.status === "remoteOnly").length,
-    localOnly: comparisons.filter(c => c.status === "localOnly").length,
-    same: comparisons.filter(c => c.status === "same").length,
-    total: comparisons.length,
-  };
-}
 
 function goToDetail(path: string) {
   const encoded = btoa(path);
@@ -127,6 +72,11 @@ function handleAddProject() {
 function handleRemove(path: string) {
   store.removeProject(path);
   loadSummaries();
+}
+
+/** Total skills for the status bar calculation */
+function getTotal(proj: { localCount: number; remoteOnlyCount: number }): number {
+  return proj.localCount + proj.remoteOnlyCount;
 }
 </script>
 
@@ -163,47 +113,86 @@ function handleRemove(path: string) {
         </NSpace>
       </NCard>
 
-      <div v-if="summaries.length === 0 && !summaries.some(s => s.loading)">
+      <!-- Loading skeleton -->
+      <template v-if="store.loadingProjects">
+        <NSkeleton text style="height: 120px" />
+        <NSkeleton text style="height: 120px" />
+      </template>
+
+      <!-- Empty state -->
+      <div v-else-if="store.projectsOverview.length === 0">
         <NEmpty :description="t('skills.project.noProjects')" />
       </div>
 
       <!-- Project cards -->
       <NCard
-        v-for="proj in summaries"
-        :key="proj.path"
+        v-for="proj in store.projectsOverview"
+        :key="proj.projectPath"
         hoverable
         style="cursor: pointer; margin-bottom: 12px"
-        @click="goToDetail(proj.path)"
+        @click="goToDetail(proj.projectPath)"
       >
+        <!-- Header: name + last updated -->
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px">
-          <NText strong style="font-size: 16px">{{ proj.name }}</NText>
-          <NSpace v-if="!proj.loading" size="small" @click.stop>
-            <NTag size="small" round>{{ getCounts(proj.comparisons).total }} 本地</NTag>
-            <NTag v-if="getCounts(proj.comparisons).same > 0" size="small" type="success" round>
-              {{ getCounts(proj.comparisons).same }} {{ t("skills.project.upToDate") }}
-            </NTag>
-            <NTag v-if="getCounts(proj.comparisons).outdated > 0" size="small" type="warning" round>
-              {{ getCounts(proj.comparisons).outdated }} {{ t("skills.project.outdated") }}
-            </NTag>
-            <NTag v-if="getCounts(proj.comparisons).remoteOnly > 0" size="small" round>
-              {{ getCounts(proj.comparisons).remoteOnly }} {{ t("skills.project.available") }}
-            </NTag>
-          </NSpace>
-          <NSpin v-else size="small" />
+          <NText strong style="font-size: 16px">{{ proj.projectName }}</NText>
+          <NText v-if="proj.lastModified" depth="3" style="font-size: 12px">
+            {{ t("skills.project.lastUpdated", { time: formatRelativeTime(proj.lastModified) }) }}
+          </NText>
         </div>
-        <div style="margin-top: 6px">
+
+        <!-- Path -->
+        <div style="margin-top: 4px">
           <NText depth="3" style="font-size: 12px; font-family: monospace; word-break: break-all">
-            {{ proj.path }}
+            {{ proj.projectPath }}
           </NText>
         </div>
-        <div v-if="proj.readme" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--n-border-color)">
+
+        <!-- Status bar (colored proportion bar) -->
+        <div
+          v-if="getTotal(proj) > 0"
+          style="margin-top: 10px; display: flex; gap: 2px; height: 6px; border-radius: 3px; overflow: hidden; background: var(--n-color-hover)"
+        >
+          <div
+            v-if="proj.sameCount > 0"
+            :style="{ flex: proj.sameCount, background: '#18a058', borderRadius: '3px' }"
+          />
+          <div
+            v-if="proj.outdatedCount > 0"
+            :style="{ flex: proj.outdatedCount, background: '#f0a020', borderRadius: '3px' }"
+          />
+          <div
+            v-if="proj.remoteOnlyCount > 0"
+            :style="{ flex: proj.remoteOnlyCount, background: '#909399', borderRadius: '3px' }"
+          />
+        </div>
+
+        <!-- Count tags -->
+        <NSpace size="small" style="margin-top: 8px" @click.stop>
+          <NTag size="small" round>{{ proj.localCount }} {{ t("skills.project.localLabel") }}</NTag>
+          <NTag v-if="proj.sameCount > 0" size="small" type="success" round>
+            {{ proj.sameCount }} {{ t("skills.project.upToDate") }}
+          </NTag>
+          <NTag v-if="proj.outdatedCount > 0" size="small" type="warning" round>
+            {{ proj.outdatedCount }} {{ t("skills.project.outdated") }}
+          </NTag>
+          <NTag v-if="proj.remoteOnlyCount > 0" size="small" round>
+            {{ proj.remoteOnlyCount }} {{ t("skills.project.available") }}
+          </NTag>
+          <NText v-if="proj.localCount === 0 && proj.remoteOnlyCount === 0" depth="3" style="font-size: 12px">
+            {{ t("skills.project.noSkills") }}
+          </NText>
+        </NSpace>
+
+        <!-- README preview -->
+        <div v-if="proj.readmePreview" style="margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--n-border-color)">
           <NText depth="2" style="font-size: 13px; white-space: pre-line; max-height: 80px; overflow: hidden; display: block">
-            {{ proj.readme }}
+            {{ proj.readmePreview }}
           </NText>
         </div>
+
         <template #action>
           <NSpace justify="end">
-            <NPopconfirm @positive-click.stop="handleRemove(proj.path)">
+            <NPopconfirm @positive-click.stop="handleRemove(proj.projectPath)">
               <template #trigger>
                 <NButton size="tiny" type="error" ghost @click.stop>
                   {{ t("skills.project.remove") }}
@@ -211,7 +200,7 @@ function handleRemove(path: string) {
               </template>
               {{ t("skills.project.removeConfirm") }}
             </NPopconfirm>
-            <NButton size="tiny" type="primary" @click.stop="goToDetail(proj.path)">
+            <NButton size="tiny" type="primary" @click.stop="goToDetail(proj.projectPath)">
               {{ t("skills.project.detail") }}
             </NButton>
           </NSpace>

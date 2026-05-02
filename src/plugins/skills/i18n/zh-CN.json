@@ -56,7 +56,14 @@
       "outdated": "可更新",
       "available": "可安装",
       "upToDate": "已是最新",
-      "detail": "查看详情"
+      "detail": "查看详情",
+      "localLabel": "本地",
+      "noSkills": "暂无本地 Skills",
+      "lastUpdated": "更新于 {time}",
+      "justNow": "刚刚",
+      "minutesAgo": "{count} 分钟前",
+      "hoursAgo": "{count} 小时前",
+      "daysAgo": "{count} 天前"
     },
     "repos": {
       "title": "Skill 仓库",

@@ -644,10 +644,135 @@ pub fn get_projects_overview(
             project_path: project_path.clone(),
             project_name,
             agent_skills_count,
+            local_count: 0,
+            same_count: 0,
+            outdated_count: 0,
+            remote_only_count: 0,
+            last_modified: None,
+            readme_preview: None,
         });
     }
 
     Ok(overviews)
+}
+pub fn get_rich_projects_overview(
+    project_paths: &[String],
+    agent_id: &str,
+    project_pattern: &str,
+    repos: &[(String, String)], // (repo_id, cache_path)
+) -> Result<Vec<ProjectOverview>, String> {
+    // 1. Scan all remote repos once, build a unified map
+    let mut remote_map: HashMap<String, (SkillInfo, String)> = HashMap::new();
+    for (repo_id, cache_path) in repos {
+        if let Ok(remote_result) = scan_remote_skills(cache_path, repo_id) {
+            for skill in remote_result.skills {
+                remote_map
+                    .entry(skill.name.clone())
+                    .or_insert_with(|| (skill, repo_id.clone()));
+            }
+        }
+    }
+
+    let mut overviews = Vec::new();
+
+    for project_path in project_paths {
+        let project_name = Path::new(project_path)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(project_path)
+            .to_string();
+
+        // 2. Resolve local skill dir for this project
+        let skills_dir = format!("{}/{}/skills", project_path, project_pattern);
+
+        let local_result = scan_skills(&skills_dir, agent_id, SkillScope::Project)
+            .unwrap_or_else(|_| ScanResult {
+                agent_id: agent_id.to_string(),
+                scope: SkillScope::Project,
+                skills: Vec::new(),
+                total: 0,
+            });
+
+        let local_map: HashMap<String, SkillInfo> = local_result
+            .skills
+            .iter()
+            .map(|s| (s.name.clone(), s.clone()))
+            .collect();
+
+        // 3. Count statuses
+        let local_count = local_map.len() as u32;
+        let mut same_count = 0u32;
+        let mut outdated_count = 0u32;
+
+        for (name, local_skill) in &local_map {
+            if let Some((remote_skill, _)) = remote_map.get(name) {
+                if local_skill.content_hash == remote_skill.content_hash {
+                    same_count += 1;
+                } else {
+                    outdated_count += 1;
+                }
+            }
+        }
+
+        let remote_names_in_local: std::collections::HashSet<&str> =
+            local_map.keys().map(|s| s.as_str()).collect();
+        let mut remote_only_count = 0u32;
+        for name in remote_map.keys() {
+            if !remote_names_in_local.contains(name.as_str()) {
+                remote_only_count += 1;
+            }
+        }
+
+        // 4. Find most recent last_modified
+        let last_modified = local_map
+            .values()
+            .filter_map(|s| s.last_modified.as_ref())
+            .max()
+            .cloned();
+
+        // 5. Try reading README from project root
+        let readme_preview = try_read_readme(project_path);
+
+        let mut agent_skills_count = HashMap::new();
+        agent_skills_count.insert(agent_id.to_string(), local_count as u64);
+
+        overviews.push(ProjectOverview {
+            project_path: project_path.clone(),
+            project_name,
+            agent_skills_count,
+            local_count,
+            same_count,
+            outdated_count,
+            remote_only_count,
+            last_modified,
+            readme_preview,
+        });
+    }
+
+    Ok(overviews)
+}
+
+/// Try reading README from project root, return first 5 lines.
+fn try_read_readme(project_path: &str) -> Option<String> {
+    let readme_names = ["README.md", "readme.md", "Readme.md", "README", "readme"];
+    let base = Path::new(project_path);
+
+    for name in readme_names {
+        let path = base.join(name);
+        if path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                let preview: String = content
+                    .lines()
+                    .take(5)
+                    .collect::<Vec<&str>>()
+                    .join("\n");
+                if !preview.trim().is_empty() {
+                    return Some(preview);
+                }
+            }
+        }
+    }
+    None
 }
 
 /// Recursively copy a directory

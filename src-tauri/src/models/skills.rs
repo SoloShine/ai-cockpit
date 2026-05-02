@@ -134,6 +134,18 @@ pub struct ProjectOverview {
     pub project_name: String,
     #[serde(default)]
     pub agent_skills_count: HashMap<String, u64>,
+    #[serde(default)]
+    pub local_count: u32,
+    #[serde(default)]
+    pub same_count: u32,
+    #[serde(default)]
+    pub outdated_count: u32,
+    #[serde(default)]
+    pub remote_only_count: u32,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub last_modified: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub readme_preview: Option<String>,
 }
 
 /// Detailed breakdown of skills in a project
