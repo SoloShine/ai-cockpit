@@ -36,7 +36,7 @@ const operatingKeys = ref<Set<string>>(new Set());
 // Column resize support
 const { getColumnWidth, handleResizeMousedown } = useColumnResize(
   "skill-compare-table",
-  { status: 120, name: 200, sourceRepo: 150, localVersion: 100, remoteVersion: 100, actions: 180 },
+  { status: 90, name: 160, sourceRepo: 120, localVersion: 80, remoteVersion: 80, actions: 150 },
 );
 
 /** Render a resizable column header with drag handle */
@@ -132,6 +132,7 @@ const columns = computed<DataTableColumns<SkillComparison>>(() => [
   {
     title: t("skills.compare.description"),
     key: "description",
+    minWidth: 200,
     ellipsis: {
       tooltip: true,
     },
