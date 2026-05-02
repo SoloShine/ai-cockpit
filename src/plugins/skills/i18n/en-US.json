@@ -191,6 +191,25 @@
       "statusVersion": "Version Differs",
       "statusContent": "Content Conflict",
       "sourcePath": "Source Path"
+    },
+    "guide": {
+      "title": "Skill Development Guide",
+      "toc": "Contents",
+      "directory": "Directory Structure",
+      "frontmatter": "Frontmatter Fields",
+      "trigger": "Trigger Configuration",
+      "security": "Security Permissions",
+      "dependencies": "Dependency Management",
+      "body": "Body Writing Guide",
+      "example": "Full Example",
+      "publishing": "Validation & Publishing",
+      "copyCode": "Copy",
+      "copied": "Copied",
+      "required": "Required",
+      "optional": "Optional",
+      "field": "Field",
+      "type": "Type",
+      "description": "Description"
     }
   }
 }

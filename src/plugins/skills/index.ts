@@ -1,5 +1,5 @@
 // src/plugins/skills/index.ts
-import { RocketOutline, FolderOutline } from "@vicons/ionicons5";
+import { RocketOutline, FolderOutline, BookOutline } from "@vicons/ionicons5";
 import type { PluginModule } from "@/core/plugin";
 import i18n from "@/core/i18n";
 import RepoPanel from "./components/RepoPanel.vue";
@@ -31,6 +31,12 @@ const plugin: PluginModule = {
         component: () => import("./views/ProjectDetailView.vue"),
         meta: { pluginId: "skills" },
       },
+      {
+        path: "/skills/guide",
+        name: "skills-guide",
+        component: () => import("./views/GuideView.vue"),
+        meta: { pluginId: "skills" },
+      },
     ],
     navItems: [
       {
@@ -42,6 +48,11 @@ const plugin: PluginModule = {
         routeName: "skills-projects",
         label: "项目 Skills",
         icon: FolderOutline,
+      },
+      {
+        routeName: "skills-guide",
+        label: "开发指南",
+        icon: BookOutline,
       },
     ],
     order: 10,

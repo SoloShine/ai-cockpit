@@ -191,6 +191,25 @@
       "statusVersion": "版本不同",
       "statusContent": "内容冲突",
       "sourcePath": "源路径"
+    },
+    "guide": {
+      "title": "Skill 开发指南",
+      "toc": "目录",
+      "directory": "目录结构",
+      "frontmatter": "Frontmatter 字段",
+      "trigger": "Trigger 触发器",
+      "security": "安全权限",
+      "dependencies": "依赖管理",
+      "body": "Body 编写",
+      "example": "完整示例",
+      "publishing": "验证与发布",
+      "copyCode": "复制",
+      "copied": "已复制",
+      "required": "必填",
+      "optional": "选填",
+      "field": "字段",
+      "type": "类型",
+      "description": "说明"
     }
   }
 }
