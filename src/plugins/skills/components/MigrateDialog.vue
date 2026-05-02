@@ -98,7 +98,7 @@ function preSelectSkills() {
     if (item.status === 'newTarget' || item.status === 'differentVersion' || item.status === 'contentDiffers') {
       selectedNames.value.add(item.name)
     }
-    if (item.status === 'differentVersion' || item.status === 'contentDiffers') {
+    if (item.status === 'newTarget' || item.status === 'differentVersion' || item.status === 'contentDiffers') {
       resolutions.value[item.name] = 'Overwrite'
     }
   }

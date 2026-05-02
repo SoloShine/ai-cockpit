@@ -438,7 +438,8 @@ export const useSkillsStore = defineStore("skills", () => {
 
       const result = await invoke<MigrateResult>("migrate_skills", { requests });
 
-      // Reload comparisons after migration
+      // Refresh skill list and comparisons after migration
+      await scanSkills(currentAgentId.value, currentScope.value);
       await loadComparisons();
 
       return result;
