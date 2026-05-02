@@ -5,8 +5,6 @@ use crate::models::skills::*;
 use crate::services::settings_service::RepoConfig;
 use crate::services::{history_service, skills_service};
 
-use crate::models::skills::{MigrateRequest, MigrateResult, MigrateFailedItem, MigrateSkillItem};
-
 /// Get the user's home directory
 fn dirs_home() -> String {
     dirs::home_dir()
