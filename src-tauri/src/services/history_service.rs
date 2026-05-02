@@ -53,7 +53,10 @@ pub fn load_history() -> Result<Vec<OperationRecord>, String> {
     let content = fs::read_to_string(&path)
         .map_err(|e| format!("Failed to read history file: {}", e))?;
     let records: Vec<OperationRecord> = serde_json::from_str(&content)
-        .unwrap_or_else(|_| Vec::new());
+        .unwrap_or_else(|e| {
+            eprintln!("[history_service] Warning: failed to parse history file, resetting: {}", e);
+            Vec::new()
+        });
     Ok(records)
 }
 

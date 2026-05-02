@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { NDrawer, NDrawerContent, NButton, NSpace, NText, NTag, NEmpty, NSpin, NScrollbar, NPopconfirm, NIcon } from 'naive-ui'
-import { watch } from 'vue'
+import { NDrawer, NDrawerContent, NButton, NSpace, NText, NTag, NEmpty, NSpin, NScrollbar, NPopconfirm, NIcon, useMessage } from 'naive-ui'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSkillsStore } from '../store'
 import { TimeOutline } from '@vicons/ionicons5'
 
 const { t } = useI18n()
 const store = useSkillsStore()
+const message = useMessage()
+const loading = ref(false)
 
 const props = defineProps<{
   show: boolean
@@ -38,8 +40,10 @@ function formatTimestamp(ts: string): string {
 async function handleRollback(id: string) {
   try {
     await store.rollbackOperation(id)
+    message.success(t('skills.history.rollbackSuccess'))
   } catch (e) {
     console.error('[OperationHistoryPanel] Rollback failed:', e)
+    message.error(String(e))
   }
 }
 
@@ -48,12 +52,18 @@ async function handleClear() {
     await store.clearHistory()
   } catch (e) {
     console.error('[OperationHistoryPanel] Clear failed:', e)
+    message.error(String(e))
   }
 }
 
-watch(() => props.show, (show) => {
+watch(() => props.show, async (show) => {
   if (show) {
-    store.getOperationHistory(100)
+    loading.value = true
+    try {
+      await store.getOperationHistory(100)
+    } finally {
+      loading.value = false
+    }
   }
 })
 </script>
@@ -75,9 +85,9 @@ watch(() => props.show, (show) => {
         </NSpace>
       </template>
 
-      <NSpin :show="store.operationHistory.length === 0 && props.show" style="min-height: 100px">
+      <NSpin :show="loading" style="min-height: 100px">
         <NScrollbar style="max-height: calc(100vh - 120px)">
-          <div v-if="store.operationHistory.length === 0" style="padding: 40px 0; text-align: center">
+          <div v-if="!loading && store.operationHistory.length === 0" style="padding: 40px 0; text-align: center">
             <NEmpty :description="t('skills.history.empty')" />
           </div>
 

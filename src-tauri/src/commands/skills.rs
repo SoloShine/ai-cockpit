@@ -3,7 +3,7 @@ use std::path::Path;
 
 use crate::models::skills::*;
 use crate::services::settings_service::RepoConfig;
-use crate::services::skills_service;
+use crate::services::{history_service, skills_service};
 
 /// Get the user's home directory
 fn dirs_home() -> String {
@@ -116,7 +116,21 @@ pub async fn install_skill(
     source: String,
     target_path: String,
 ) -> Result<OperationResult, String> {
-    skills_service::install_skill(&source, &target_path)
+    let result = skills_service::install_skill(&source, &target_path)?;
+    // Record in operation history
+    let skill_name = Path::new(&target_path)
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let _ = history_service::record_operation(
+        history_service::OperationType::Install,
+        skill_name,
+        target_path,
+        Some(source),
+        None,
+        None,
+    );
+    Ok(result)
 }
 
 /// Update a skill
@@ -125,13 +139,39 @@ pub async fn update_skill(
     source: String,
     target_path: String,
 ) -> Result<OperationResult, String> {
-    skills_service::update_skill(&source, &target_path)
+    let skill_name = Path::new(&target_path)
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let result = skills_service::update_skill(&source, &target_path)?;
+    let _ = history_service::record_operation(
+        history_service::OperationType::Update,
+        skill_name,
+        target_path,
+        Some(source),
+        None,
+        None,
+    );
+    Ok(result)
 }
 
 /// Uninstall a skill
 #[tauri::command]
 pub async fn uninstall_skill(skill_path: String) -> Result<OperationResult, String> {
-    skills_service::uninstall_skill(&skill_path)
+    let skill_name = Path::new(&skill_path)
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let result = skills_service::uninstall_skill(&skill_path)?;
+    let _ = history_service::record_operation(
+        history_service::OperationType::Uninstall,
+        skill_name,
+        skill_path,
+        None,
+        None,
+        None,
+    );
+    Ok(result)
 }
 
 /// Batch operate on multiple skills
@@ -163,8 +203,15 @@ fn resolve_repo_cache(cache_path: &str, repo_id: &str) -> String {
             .map(|p| p.to_string_lossy().to_string())
             .unwrap_or_default();
         cache_path.replacen("~", &home, 1)
-    } else {
+    } else if cache_path.starts_with('/') || (cache_path.len() >= 2 && cache_path.as_bytes()[1] == b':') {
+        // Already absolute (Unix or Windows)
         cache_path.to_string()
+    } else {
+        // Relative path → resolve under app data dir
+        dirs::data_dir()
+            .map(|d| d.join("ai-cockpit").join(cache_path))
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|| cache_path.to_string())
     }
 }
 

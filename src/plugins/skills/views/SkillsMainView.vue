@@ -54,14 +54,16 @@ function handlePreview(skillPath: string, skillName: string) {
     <NSpace vertical :size="16" style="flex: 1; overflow: auto">
       <NSpace justify="space-between" align="center">
         <NText strong style="font-size: 18px">{{ t("skills.title") }}</NText>
-        <NButton size="small" :loading="settingsStore.syncing" @click="handleSync">
-          <template #icon><NIcon :component="SyncOutline" /></template>
-          {{ settingsStore.syncing ? t("skills.sync.syncing") : t("skills.sync.syncAll") }}
-        </NButton>
-        <NButton size="small" @click="store.showHistoryPanel = true">
-          <template #icon><NIcon :component="TimeOutline" /></template>
-          {{ t("skills.history.title") }}
-        </NButton>
+        <NSpace size="small">
+          <NButton size="small" :loading="settingsStore.syncing" @click="handleSync">
+            <template #icon><NIcon :component="SyncOutline" /></template>
+            {{ settingsStore.syncing ? t("skills.sync.syncing") : t("skills.sync.syncAll") }}
+          </NButton>
+          <NButton size="small" @click="store.showHistoryPanel = true">
+            <template #icon><NIcon :component="TimeOutline" /></template>
+            {{ t("skills.history.title") }}
+          </NButton>
+        </NSpace>
       </NSpace>
 
       <AgentSelect />

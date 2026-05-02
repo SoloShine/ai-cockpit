@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { NSpace, NText, NButton, NIcon } from "naive-ui";
 import { ArrowBackOutline } from "@vicons/ionicons5";
@@ -34,6 +34,12 @@ const previewSkillPath = ref("");
 const previewSkillName = ref("");
 
 onMounted(() => {
+  if (projectPath.value) {
+    store.loadComparisons("project", projectPath.value);
+  }
+});
+
+watch(() => store.currentAgentId, () => {
   if (projectPath.value) {
     store.loadComparisons("project", projectPath.value);
   }

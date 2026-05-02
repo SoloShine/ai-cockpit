@@ -9,10 +9,14 @@ import {
   NButton,
   NTag,
   NTooltip,
+  NText,
+  NAlert,
+  NEmpty,
   useDialog,
   type DataTableRowKey,
 } from "naive-ui";
 import { useSkillsStore } from "../store";
+import { useSettingsStore } from "@/plugins/settings/store";
 import type { SkillComparison, SkillOperation, ComparisonStatus } from "../types";
 
 const emit = defineEmits<{
@@ -23,6 +27,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const dialog = useDialog();
 const store = useSkillsStore();
+const settingsStore = useSettingsStore();
 
 const checkedRowKeys = ref<DataTableRowKey[]>([]);
 const operatingKeys = ref<Set<string>>(new Set());
@@ -80,7 +85,13 @@ const columns = computed<DataTableColumns<SkillComparison>>(() => [
     title: t("skills.compare.sourceRepo"),
     key: "sourceRepo",
     width: 150,
-    render: (row) => row.sourceRepo || "-",
+    render: (row) => {
+      const repoId = row.sourceRepo;
+      if (!repoId) return h(NText, { depth: 3 }, () => "-");
+      const repo = settingsStore.repos.find((r) => r.id === repoId);
+      const name = repo?.name || repoId;
+      return h(NTag, { size: "small", type: "info", round: true }, { default: () => name });
+    },
   },
   {
     title: t("skills.compare.localVersion"),
@@ -339,6 +350,17 @@ async function handleBatchUpdate() {
 
 <template>
   <div class="skill-compare-table">
+    <n-alert v-if="store.error" type="error" :title="t('skills.compare.errorTitle')" style="margin-bottom: 12px">
+      {{ store.error }}
+    </n-alert>
+
+    <n-empty
+      v-if="!store.loading && store.comparisons.length === 0 && !store.error"
+      :description="t('skills.compare.empty')"
+      style="padding: 40px 0"
+    />
+
+    <template v-if="store.comparisons.length > 0 || store.loading">
     <n-space v-if="canBatchInstall || canBatchUpdate" :mb="3">
       <n-button
         v-if="canBatchInstall"
@@ -369,6 +391,7 @@ async function handleBatchUpdate() {
         (keys: DataTableRowKey[]) => (checkedRowKeys = keys)
       "
     />
+    </template>
   </div>
 </template>
 

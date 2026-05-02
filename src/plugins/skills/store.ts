@@ -342,18 +342,35 @@ export const useSkillsStore = defineStore("skills", () => {
   }
 
   async function getOperationHistory(limit?: number) {
-    operationHistory.value = await invoke<OperationRecord[]>('get_operation_history', { limit });
+    try {
+      operationHistory.value = await invoke<OperationRecord[]>('get_operation_history', { limit });
+    } catch (e) {
+      console.error('[SkillsStore] Failed to load operation history:', e);
+      operationHistory.value = [];
+    }
   }
 
   async function rollbackOperation(id: string) {
-    await invoke<string>('rollback_operation', { id });
-    await getOperationHistory();
-    await loadComparisons();
+    try {
+      await invoke<string>('rollback_operation', { id });
+      await getOperationHistory();
+      await loadComparisons();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      error.value = msg;
+      throw e;
+    }
   }
 
   async function clearHistory() {
-    await invoke('clear_history');
-    operationHistory.value = [];
+    try {
+      await invoke('clear_history');
+      operationHistory.value = [];
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      error.value = msg;
+      throw e;
+    }
   }
 
   return {
