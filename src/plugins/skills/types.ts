@@ -127,3 +127,17 @@ export interface DiffLine {
   newLineNumber?: number
   content: string
 }
+
+/** A single operation record in the history log */
+export interface OperationRecord {
+  id: string
+  operationType: 'install' | 'update' | 'uninstall'
+  skillName: string
+  targetPath: string
+  sourcePath?: string
+  timestamp: string
+  versionBefore?: string
+  versionAfter?: string
+  canRollback: boolean
+  rolledBack: boolean
+}

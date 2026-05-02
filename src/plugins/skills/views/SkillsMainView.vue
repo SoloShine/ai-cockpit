@@ -7,7 +7,8 @@ import AgentSelect from "../components/AgentSelect.vue";
 import SkillCompareTable from "../components/SkillCompareTable.vue";
 import SkillDiffViewer from "../components/SkillDiffViewer.vue";
 import SkillPreviewModal from "../components/SkillPreviewModal.vue";
-import { SyncOutline } from "@vicons/ionicons5";
+import OperationHistoryPanel from "../components/OperationHistoryPanel.vue";
+import { SyncOutline, TimeOutline } from "@vicons/ionicons5";
 import { useSettingsStore } from "@/plugins/settings/store";
 
 const { t } = useI18n();
@@ -57,6 +58,10 @@ function handlePreview(skillPath: string, skillName: string) {
           <template #icon><NIcon :component="SyncOutline" /></template>
           {{ settingsStore.syncing ? t("skills.sync.syncing") : t("skills.sync.syncAll") }}
         </NButton>
+        <NButton size="small" @click="store.showHistoryPanel = true">
+          <template #icon><NIcon :component="TimeOutline" /></template>
+          {{ t("skills.history.title") }}
+        </NButton>
       </NSpace>
 
       <AgentSelect />
@@ -77,5 +82,10 @@ function handlePreview(skillPath: string, skillName: string) {
     :skill-path="previewSkillPath"
     :skill-name="previewSkillName"
     @close="showPreview = false"
+  />
+
+  <OperationHistoryPanel
+    :show="store.showHistoryPanel"
+    @close="store.showHistoryPanel = false"
   />
 </template>

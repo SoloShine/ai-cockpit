@@ -39,6 +39,10 @@ pub fn run() {
             commands::skills::compare_skills,
             commands::skills::get_skill_diff,
             commands::skills::get_diff_file_content,
+            // History
+            commands::history::get_operation_history,
+            commands::history::rollback_operation,
+            commands::history::clear_history,
         ])
         .run(tauri::generate_context!())
         .expect("error while running AI Cockpit");

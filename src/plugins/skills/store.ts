@@ -12,6 +12,7 @@ import type {
   SkillComparison,
   SkillDiffResult,
   DiffFileContent,
+  OperationRecord,
 } from "./types";
 
 const PROJECT_PATHS_KEY = "skills_project_paths";
@@ -44,6 +45,8 @@ export const useSkillsStore = defineStore("skills", () => {
   const comparisonMode = ref(false);
   const currentDiff = ref<SkillDiffResult | null>(null);
   const loadingDiff = ref(false);
+  const operationHistory = ref<OperationRecord[]>([]);
+  const showHistoryPanel = ref(false);
 
   // Computed
   const currentSkills = computed<SkillInfo[]>(() => {
@@ -148,9 +151,8 @@ export const useSkillsStore = defineStore("skills", () => {
     if (!skillsMap.has(agentId)) {
       await scanSkills(agentId, currentScope.value);
     }
-    if (comparisonMode.value) {
-      await loadComparisons();
-    }
+    // Always reload comparisons — views depend on them
+    await loadComparisons();
   }
 
   async function switchScope(scope: SkillScope): Promise<void> {
@@ -339,6 +341,21 @@ export const useSkillsStore = defineStore("skills", () => {
     currentDiff.value = null;
   }
 
+  async function getOperationHistory(limit?: number) {
+    operationHistory.value = await invoke<OperationRecord[]>('get_operation_history', { limit });
+  }
+
+  async function rollbackOperation(id: string) {
+    await invoke<string>('rollback_operation', { id });
+    await getOperationHistory();
+    await loadComparisons();
+  }
+
+  async function clearHistory() {
+    await invoke('clear_history');
+    operationHistory.value = [];
+  }
+
   return {
     // State
     currentAgentId,
@@ -383,5 +400,12 @@ export const useSkillsStore = defineStore("skills", () => {
     loadSkillDiff,
     loadDiffFileContent,
     clearDiff,
+
+    // History
+    operationHistory,
+    showHistoryPanel,
+    getOperationHistory,
+    rollbackOperation,
+    clearHistory,
   };
 });

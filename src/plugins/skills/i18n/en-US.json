@@ -93,7 +93,7 @@
     "compare": {
       "status": "Status",
       "statusSame": "Same",
-      "statusOutdated": "Outdated",
+      "statusOutdated": "Updatable",
       "statusLocalOnly": "Local Only",
       "statusRemoteOnly": "Remote Only",
       "name": "Name",
@@ -109,10 +109,12 @@
       "batchInstall": "Batch Install",
       "batchUpdate": "Batch Update",
       "modeOn": "Compare Mode",
-      "modeOff": "Compare"
+      "modeOff": "Compare",
+      "errorTitle": "Load Failed",
+      "empty": "No comparison data. Sync remote repos first."
     },
     "diff": {
-      "title": "Diff: {name}",
+      "title": "Diff Details",
       "file": "File",
       "status": "Status",
       "added": "Added",
@@ -120,12 +122,46 @@
       "modified": "Modified",
       "unchanged": "Unchanged",
       "loading": "Loading...",
-      "selectFile": "Click a file on the left to view diff"
+      "selectFile": "Click a file on the left to view diff",
+      "localSize": "Local Size",
+      "remoteSize": "Remote Size",
+      "sizeDelta": "Size Delta",
+      "close": "Close",
+      "noContent": "No Content"
     },
     "preview": {
       "title": "Preview: {name}",
       "selectFile": "Click a file on the left to view content",
-      "loadError": "Failed to load"
+      "loadError": "Failed to load",
+      "fileList": "Files",
+      "noFiles": "No files",
+      "name": "Name",
+      "version": "Version",
+      "description": "Description",
+      "tags": "Tags",
+      "license": "License",
+      "updatedAt": "Updated",
+      "author": "Author",
+      "language": "Language",
+      "repository": "Repository",
+      "trigger": "Trigger",
+      "security": "Security",
+      "compatibility": "Compatibility",
+      "dependencies": "Dependencies",
+      "renderFailed": "Render failed"
+    },
+    "history": {
+      "title": "Operation History",
+      "empty": "No operation records",
+      "install": "Install",
+      "update": "Update",
+      "uninstall": "Uninstall",
+      "rollback": "Rollback",
+      "rollbackConfirm": "Are you sure you want to rollback this operation?",
+      "rollbackSuccess": "Rollback successful",
+      "rolledBack": "Rolled back",
+      "clear": "Clear History",
+      "clearConfirm": "Are you sure you want to clear all operation records? This cannot be undone."
     }
   }
 }

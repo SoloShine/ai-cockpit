@@ -92,10 +92,10 @@
     },
     "compare": {
       "status": "状态",
-      "statusSame": "相同",
-      "statusOutdated": "过时",
+      "statusSame": "一致",
+      "statusOutdated": "可更新",
       "statusLocalOnly": "仅本地",
-      "statusRemoteOnly": "仅远程",
+      "statusRemoteOnly": "仅远端",
       "name": "名称",
       "sourceRepo": "来源仓库",
       "localVersion": "本地版本",
@@ -109,10 +109,12 @@
       "batchInstall": "批量安装",
       "batchUpdate": "批量更新",
       "modeOn": "对比模式",
-      "modeOff": "开启对比"
+      "modeOff": "开启对比",
+      "errorTitle": "加载失败",
+      "empty": "暂无对比数据，请先同步远端仓库"
     },
     "diff": {
-      "title": "差异详情：{name}",
+      "title": "差异详情",
       "file": "文件",
       "status": "状态",
       "added": "新增",
@@ -120,12 +122,46 @@
       "modified": "修改",
       "unchanged": "未变",
       "loading": "加载中...",
-      "selectFile": "点击左侧文件查看差异"
+      "selectFile": "点击左侧文件查看差异",
+      "localSize": "本地大小",
+      "remoteSize": "远程大小",
+      "sizeDelta": "大小变化",
+      "close": "关闭",
+      "noContent": "无内容"
     },
     "preview": {
       "title": "预览：{name}",
       "selectFile": "点击左侧文件查看内容",
-      "loadError": "加载失败"
+      "loadError": "加载失败",
+      "fileList": "文件列表",
+      "noFiles": "无文件",
+      "name": "名称",
+      "version": "版本",
+      "description": "说明",
+      "tags": "标签",
+      "license": "许可证",
+      "updatedAt": "更新时间",
+      "author": "作者",
+      "language": "语言",
+      "repository": "仓库",
+      "trigger": "触发条件",
+      "security": "安全权限",
+      "compatibility": "兼容性",
+      "dependencies": "依赖",
+      "renderFailed": "渲染失败"
+    },
+    "history": {
+      "title": "操作历史",
+      "empty": "暂无操作记录",
+      "install": "安装",
+      "update": "更新",
+      "uninstall": "卸载",
+      "rollback": "回滚",
+      "rollbackConfirm": "确定要回滚此操作吗？",
+      "rollbackSuccess": "回滚成功",
+      "rolledBack": "已回滚",
+      "clear": "清空历史",
+      "clearConfirm": "确定要清空所有操作记录吗？此操作不可撤销。"
     }
   }
 }
