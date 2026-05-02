@@ -8,7 +8,8 @@ import SkillCompareTable from "../components/SkillCompareTable.vue";
 import SkillDiffViewer from "../components/SkillDiffViewer.vue";
 import SkillPreviewModal from "../components/SkillPreviewModal.vue";
 import OperationHistoryPanel from "../components/OperationHistoryPanel.vue";
-import { SyncOutline, TimeOutline } from "@vicons/ionicons5";
+import MigrateDialog from "../components/MigrateDialog.vue";
+import { SyncOutline, TimeOutline, SwapHorizontalOutline } from "@vicons/ionicons5";
 import { useSettingsStore } from "@/plugins/settings/store";
 
 const { t } = useI18n();
@@ -63,6 +64,10 @@ function handlePreview(skillPath: string, skillName: string) {
             <template #icon><NIcon :component="TimeOutline" /></template>
             {{ t("skills.history.title") }}
           </NButton>
+          <NButton size="small" @click="store.showMigrateDialog = true">
+            <template #icon><NIcon :component="SwapHorizontalOutline" /></template>
+            {{ t("skills.migrate.title") }}
+          </NButton>
         </NSpace>
       </NSpace>
 
@@ -90,4 +95,6 @@ function handlePreview(skillPath: string, skillName: string) {
     :show="store.showHistoryPanel"
     @close="store.showHistoryPanel = false"
   />
+
+  <MigrateDialog />
 </template>

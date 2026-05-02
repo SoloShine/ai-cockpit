@@ -210,3 +210,51 @@ pub struct SkillDiffResult {
     pub modified_count: u32,
     pub unchanged_count: u32,
 }
+
+/// Migration scan result for a single skill
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MigrateSkillItem {
+    pub name: String,
+    pub source_path: String,
+    pub target_path: String,
+    pub status: String, // "newTarget" | "sameContent" | "differentVersion" | "contentDiffers"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target_hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
+/// A single migration request
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MigrateRequest {
+    pub name: String,
+    pub source_path: String,
+    pub target_path: String,
+    pub resolution: String, // "Skip" or "Overwrite"
+}
+
+/// Migration result summary
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MigrateResult {
+    #[serde(default)]
+    pub migrated: Vec<String>,
+    #[serde(default)]
+    pub skipped: Vec<String>,
+    #[serde(default)]
+    pub failed: Vec<MigrateFailedItem>,
+}
+
+/// A single failed migration item
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MigrateFailedItem {
+    pub name: String,
+    pub error: String,
+}

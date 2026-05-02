@@ -141,3 +141,25 @@ export interface OperationRecord {
   canRollback: boolean
   rolledBack: boolean
 }
+
+/** Migration scan result for a single skill */
+export interface MigrateSkillItem {
+  name: string
+  sourcePath: string
+  targetPath: string
+  status: 'newTarget' | 'sameContent' | 'differentVersion' | 'contentDiffers'
+  sourceHash?: string
+  targetHash?: string
+  version?: string
+  description?: string
+}
+
+/** Migration conflict resolution */
+export type ConflictResolution = 'Skip' | 'Overwrite'
+
+/** Migration result summary */
+export interface MigrateResult {
+  migrated: string[]
+  skipped: string[]
+  failed: { name: string; error: string }[]
+}

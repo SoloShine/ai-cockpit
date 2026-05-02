@@ -162,6 +162,35 @@
       "rolledBack": "已回滚",
       "clear": "清空历史",
       "clearConfirm": "确定要清空所有操作记录吗？此操作不可撤销。"
+    },
+    "migrate": {
+      "title": "迁移技能",
+      "step1": "选择源 Agent",
+      "step2": "选择技能",
+      "step3": "确认迁移",
+      "sourceAgent": "源 Agent",
+      "sourceAgentPlaceholder": "请选择要从中迁移的 Agent",
+      "noAgents": "没有其他可用的 Agent",
+      "noSkills": "源 Agent 中没有技能",
+      "selectAll": "全选",
+      "selected": "已选 {count} 个",
+      "newGroup": "新增技能",
+      "conflictGroup": "冲突技能",
+      "diff": "查看差异",
+      "skip": "跳过",
+      "overwrite": "覆盖",
+      "summary": "将迁移 {migrate} 个，跳过 {skip} 个",
+      "confirm": "开始迁移",
+      "migrating": "迁移中...",
+      "success": "迁移完成：{migrated} 成功，{failed} 失败",
+      "failed": "迁移失败：{error}",
+      "next": "下一步",
+      "prev": "上一步",
+      "statusNew": "新增",
+      "statusSame": "内容相同",
+      "statusVersion": "版本不同",
+      "statusContent": "内容冲突",
+      "sourcePath": "源路径"
     }
   }
 }

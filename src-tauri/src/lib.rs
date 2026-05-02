@@ -39,6 +39,9 @@ pub fn run() {
             commands::skills::compare_skills,
             commands::skills::get_skill_diff,
             commands::skills::get_diff_file_content,
+            // Skills — Batch 4: Migration
+            commands::skills::scan_migrate_skills,
+            commands::skills::migrate_skills,
             // History
             commands::history::get_operation_history,
             commands::history::rollback_operation,

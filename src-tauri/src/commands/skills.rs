@@ -5,6 +5,8 @@ use crate::models::skills::*;
 use crate::services::settings_service::RepoConfig;
 use crate::services::{history_service, skills_service};
 
+use crate::models::skills::{MigrateRequest, MigrateResult, MigrateFailedItem, MigrateSkillItem};
+
 /// Get the user's home directory
 fn dirs_home() -> String {
     dirs::home_dir()
@@ -255,4 +257,140 @@ pub async fn get_diff_file_content(
         &remote_skill_path,
         &rel_file_path,
     )
+}
+
+/// Scan source and target skill directories to determine migration status of each skill.
+#[tauri::command]
+pub async fn scan_migrate_skills(
+    source_path: String,
+    target_path: String,
+) -> Result<Vec<MigrateSkillItem>, String> {
+    let expanded_source = expand_path(&source_path);
+    let expanded_target = expand_path(&target_path);
+
+    let source_result = skills_service::scan_skills(&expanded_source, "source", SkillScope::Global)?;
+    let target_result = skills_service::scan_skills(&expanded_target, "target", SkillScope::Global)?;
+
+    // Build a map of target skills by name
+    let target_map: std::collections::HashMap<String, &SkillInfo> = target_result
+        .skills
+        .iter()
+        .map(|s| (s.name.clone(), s))
+        .collect();
+
+    let mut items = Vec::new();
+
+    for source_skill in &source_result.skills {
+        let target_skill_path = format!("{}/{}", expanded_target, source_skill.name);
+
+        if let Some(target_skill) = target_map.get(&source_skill.name) {
+            // Target exists — compare
+            let status = if source_skill.content_hash == target_skill.content_hash {
+                "sameContent".to_string()
+            } else {
+                // Check if versions differ
+                let source_version = source_skill.meta.as_ref().and_then(|m| m.version.as_deref());
+                let target_version = target_skill.meta.as_ref().and_then(|m| m.version.as_deref());
+
+                if source_version != target_version {
+                    "differentVersion".to_string()
+                } else {
+                    "contentDiffers".to_string()
+                }
+            };
+
+            items.push(MigrateSkillItem {
+                name: source_skill.name.clone(),
+                source_path: source_skill.path.clone(),
+                target_path: target_skill.path.clone(),
+                status,
+                source_hash: Some(source_skill.content_hash.clone()),
+                target_hash: Some(target_skill.content_hash.clone()),
+                version: source_skill.meta.as_ref().and_then(|m| m.version.clone()),
+                description: source_skill.meta.as_ref().map(|m| m.description.clone()),
+            });
+        } else {
+            // No target — new skill
+            items.push(MigrateSkillItem {
+                name: source_skill.name.clone(),
+                source_path: source_skill.path.clone(),
+                target_path: target_skill_path,
+                status: "newTarget".to_string(),
+                source_hash: Some(source_skill.content_hash.clone()),
+                target_hash: None,
+                version: source_skill.meta.as_ref().and_then(|m| m.version.clone()),
+                description: source_skill.meta.as_ref().map(|m| m.description.clone()),
+            });
+        }
+    }
+
+    // Sort: contentDiffers first, then differentVersion, then newTarget, then sameContent
+    items.sort_by(|a, b| {
+        let order = |s: &str| match s {
+            "contentDiffers" => 0,
+            "differentVersion" => 1,
+            "newTarget" => 2,
+            "sameContent" => 3,
+            _ => 4,
+        };
+        order(&a.status).cmp(&order(&b.status))
+    });
+
+    Ok(items)
+}
+
+/// Execute migration: copy selected skills from source to target agent directory.
+#[tauri::command]
+pub async fn migrate_skills(
+    requests: Vec<MigrateRequest>,
+) -> Result<MigrateResult, String> {
+    let mut migrated = Vec::new();
+    let mut skipped = Vec::new();
+    let mut failed = Vec::new();
+
+    for req in &*requests {
+        if req.resolution == "Skip" {
+            skipped.push(req.name.clone());
+            continue;
+        }
+
+        // resolution == "Overwrite" — remove target if exists, then copy
+        let target = Path::new(&req.target_path);
+        if target.exists() {
+            if let Err(e) = skills_service::uninstall_skill(&req.target_path) {
+                failed.push(MigrateFailedItem {
+                    name: req.name.clone(),
+                    error: format!("Failed to remove existing target: {}", e),
+                });
+                continue;
+            }
+        }
+
+        match skills_service::install_skill(&req.source_path, &req.target_path) {
+            Ok(_) => {
+                // Record in history
+                let _ = history_service::record_operation(
+                    history_service::OperationType::Install,
+                    req.name.clone(),
+                    req.target_path.clone(),
+                    Some(req.source_path.clone()),
+                    None,
+                    None,
+                );
+                migrated.push(req.name.clone());
+            }
+            Err(e) => {
+                failed.push(MigrateFailedItem {
+                    name: req.name.clone(),
+                    error: e,
+                });
+            }
+        }
+    }
+
+    Ok(MigrateResult {
+        migrated,
+        skipped,
+        failed,
+    })
 }

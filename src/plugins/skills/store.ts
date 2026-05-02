@@ -13,6 +13,9 @@ import type {
   SkillDiffResult,
   DiffFileContent,
   OperationRecord,
+  MigrateSkillItem,
+  ConflictResolution,
+  MigrateResult,
 } from "./types";
 
 const PROJECT_PATHS_KEY = "skills_project_paths";
@@ -47,6 +50,11 @@ export const useSkillsStore = defineStore("skills", () => {
   const loadingDiff = ref(false);
   const operationHistory = ref<OperationRecord[]>([]);
   const showHistoryPanel = ref(false);
+
+  // Migration state
+  const showMigrateDialog = ref(false);
+  const migrateSkills = ref<MigrateSkillItem[]>([]);
+  const migrating = ref(false);
 
   // Computed
   const currentSkills = computed<SkillInfo[]>(() => {
@@ -373,6 +381,68 @@ export const useSkillsStore = defineStore("skills", () => {
     }
   }
 
+  // --- Migration ---
+
+  async function scanAgentSkills(sourceAgentId: string): Promise<void> {
+    const settingsStore = useSettingsStore();
+    const sourceAgent = settingsStore.agents.find((a) => a.id === sourceAgentId);
+    const targetAgent = getCurrentAgentConfig();
+    if (!sourceAgent || !targetAgent) return;
+
+    loading.value = true;
+    error.value = null;
+    try {
+      const sourcePath = sourceAgent.globalPath + "/skills";
+      const targetPath = targetAgent.globalPath + "/skills";
+      migrateSkills.value = await invoke<MigrateSkillItem[]>("scan_migrate_skills", {
+        sourcePath,
+        targetPath,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      error.value = msg;
+      migrateSkills.value = [];
+      console.error("[SkillsStore] Failed to scan migrate skills:", e);
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function executeMigration(
+    selectedNames: string[],
+    resolutions: Record<string, ConflictResolution>,
+  ): Promise<MigrateResult> {
+    migrating.value = true;
+    error.value = null;
+    try {
+      const requests = migrateSkills.value
+        .filter((item) => selectedNames.includes(item.name))
+        .map((item) => ({
+          name: item.name,
+          sourcePath: item.sourcePath,
+          targetPath: item.targetPath,
+          resolution: resolutions[item.name] ?? "Skip",
+        }));
+
+      const result = await invoke<MigrateResult>("migrate_skills", { requests });
+
+      // Reload comparisons after migration
+      await loadComparisons();
+
+      return result;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      error.value = msg;
+      throw e;
+    } finally {
+      migrating.value = false;
+    }
+  }
+
+  function clearMigration(): void {
+    migrateSkills.value = [];
+  }
+
   return {
     // State
     currentAgentId,
@@ -424,5 +494,13 @@ export const useSkillsStore = defineStore("skills", () => {
     getOperationHistory,
     rollbackOperation,
     clearHistory,
+
+    // Migration
+    showMigrateDialog,
+    migrateSkills,
+    migrating,
+    scanAgentSkills,
+    executeMigration,
+    clearMigration,
   };
 });

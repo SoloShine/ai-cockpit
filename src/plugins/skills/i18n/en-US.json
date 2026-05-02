@@ -162,6 +162,35 @@
       "rolledBack": "Rolled back",
       "clear": "Clear History",
       "clearConfirm": "Are you sure you want to clear all operation records? This cannot be undone."
+    },
+    "migrate": {
+      "title": "Migrate Skills",
+      "step1": "Select Source Agent",
+      "step2": "Select Skills",
+      "step3": "Confirm Migration",
+      "sourceAgent": "Source Agent",
+      "sourceAgentPlaceholder": "Select an agent to migrate from",
+      "noAgents": "No other agents available",
+      "noSkills": "No skills found in source agent",
+      "selectAll": "Select All",
+      "selected": "{count} selected",
+      "newGroup": "New Skills",
+      "conflictGroup": "Conflicting Skills",
+      "diff": "View Diff",
+      "skip": "Skip",
+      "overwrite": "Overwrite",
+      "summary": "Will migrate {migrate}, skip {skip}",
+      "confirm": "Start Migration",
+      "migrating": "Migrating...",
+      "success": "Migration complete: {migrated} succeeded, {failed} failed",
+      "failed": "Migration failed: {error}",
+      "next": "Next",
+      "prev": "Previous",
+      "statusNew": "New",
+      "statusSame": "Same Content",
+      "statusVersion": "Version Differs",
+      "statusContent": "Content Conflict",
+      "sourcePath": "Source Path"
     }
   }
 }
