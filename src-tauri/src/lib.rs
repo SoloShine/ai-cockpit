@@ -43,6 +43,11 @@ pub fn run() {
             // Skills — Batch 4: Migration
             commands::skills::scan_migrate_skills,
             commands::skills::migrate_skills,
+            // Skills — Batch 5: Skillbase
+            commands::skills::get_skillbase_resolution,
+            commands::skills::sync_skillbase_dependencies,
+            commands::skills::generate_skillbase_json,
+            commands::skills::write_skillbase_json,
             // History
             commands::history::get_operation_history,
             commands::history::rollback_operation,

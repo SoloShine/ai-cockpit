@@ -169,3 +169,47 @@ export interface MigrateResult {
   skipped: string[]
   failed: { name: string; error: string }[]
 }
+
+// --- Skillbase dependency management ---
+
+/** Root of a skillbase.json manifest */
+export interface SkillbaseManifest {
+  schemaVersion: number
+  name: string
+  version: string
+  /** Map of skill reference → version range (e.g. "@author/name" → "^1.0.0") */
+  skills: Record<string, string>
+  /** Optional registry URL to filter repos */
+  registry?: string
+}
+
+/** Status of a single dependency resolution */
+export type DependencyStatus = 'satisfied' | 'missing' | 'versionMismatch' | 'outdated'
+
+/** A single resolved dependency entry */
+export interface DependencyEntry {
+  reference: string
+  skillName: string
+  versionRange: string
+  resolvedVersion?: string
+  installedVersion?: string
+  status: DependencyStatus
+}
+
+/** Complete resolution result for a skillbase.json */
+export interface SkillbaseResolution {
+  manifest: SkillbaseManifest
+  dependencies: DependencyEntry[]
+  totalCount: number
+  satisfiedCount: number
+  missingCount: number
+  mismatchCount: number
+  outdatedCount: number
+}
+
+/** Result of syncing a single skillbase dependency */
+export interface SkillbaseSyncResult {
+  reference: string
+  success: boolean
+  error?: string
+}

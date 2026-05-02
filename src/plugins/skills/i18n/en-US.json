@@ -218,6 +218,28 @@
       "field": "Field",
       "type": "Type",
       "description": "Description"
+    },
+    "skillbase": {
+      "title": "Skillbase Dependencies",
+      "manifest": "Manifest",
+      "satisfied": "Satisfied",
+      "missing": "Missing",
+      "mismatch": "Mismatch",
+      "outdated": "Outdated",
+      "versionMismatch": "Version Mismatch",
+      "syncDeps": "Sync Dependencies",
+      "syncing": "Syncing...",
+      "regenerate": "Regenerate",
+      "regenerateConfirm": "Regenerate skillbase.json? This will overwrite the current file.",
+      "generating": "Generating...",
+      "noDependencies": "No dependencies declared",
+      "syncSuccess": "Dependencies synced successfully",
+      "syncPartial": "Sync completed: {success} succeeded, {failed} failed",
+      "generateSuccess": "skillbase.json regenerated",
+      "loadFailed": "Failed to load dependency info",
+      "notFound": "skillbase.json not found",
+      "showSkillbase": "Dependencies",
+      "hideSkillbase": "Hide Dependencies"
     }
   }
 }

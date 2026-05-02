@@ -422,3 +422,63 @@ pub async fn migrate_skills(
         failed,
     })
 }
+
+// --- Skillbase dependency management ---
+
+/// Resolve skillbase.json dependencies for a project
+#[tauri::command]
+pub async fn get_skillbase_resolution(
+    skill_dir: String,
+    repos: Vec<RepoConfig>,
+) -> Result<SkillbaseResolution, String> {
+    let expanded = expand_path(&skill_dir);
+    let repo_dirs: Vec<(String, String)> = repos
+        .into_iter()
+        .filter(|r| r.enabled)
+        .map(|r| (r.id.clone(), resolve_repo_cache(&r.cache_path, &r.id)))
+        .collect();
+
+    skills_service::resolve_skillbase(&expanded, &repo_dirs)
+}
+
+/// Sync missing/mismatched/outdated skillbase dependencies
+#[tauri::command]
+pub async fn sync_skillbase_dependencies(
+    skill_dir: String,
+    repos: Vec<RepoConfig>,
+) -> Result<Vec<SkillbaseSyncResult>, String> {
+    let expanded = expand_path(&skill_dir);
+    let repo_dirs: Vec<(String, String)> = repos
+        .into_iter()
+        .filter(|r| r.enabled)
+        .map(|r| (r.id.clone(), resolve_repo_cache(&r.cache_path, &r.id)))
+        .collect();
+
+    skills_service::sync_skillbase(&expanded, &repo_dirs)
+}
+
+/// Generate skillbase.json from currently installed skills
+#[tauri::command]
+pub async fn generate_skillbase_json(
+    skill_dir: String,
+    repos: Vec<RepoConfig>,
+) -> Result<String, String> {
+    let expanded = expand_path(&skill_dir);
+    let repo_dirs: Vec<(String, String)> = repos
+        .into_iter()
+        .filter(|r| r.enabled)
+        .map(|r| (r.id.clone(), resolve_repo_cache(&r.cache_path, &r.id)))
+        .collect();
+
+    skills_service::generate_skillbase(&expanded, &repo_dirs)
+}
+
+/// Write skillbase.json content to project root
+#[tauri::command]
+pub async fn write_skillbase_json(
+    project_path: String,
+    content: String,
+) -> Result<(), String> {
+    let expanded = expand_path(&project_path);
+    skills_service::write_skillbase(&expanded, &content)
+}

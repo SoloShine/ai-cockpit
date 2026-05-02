@@ -1038,6 +1038,380 @@ pub fn get_diff_file_content(
     })
 }
 
+// --- Skillbase dependency management ---
+
+/// Parse skillbase.json from a project directory
+pub fn parse_skillbase_manifest(project_path: &str) -> Result<SkillbaseManifest, String> {
+    let path = Path::new(project_path).join("skillbase.json");
+    if !path.exists() {
+        return Err("skillbase.json not found in project directory".to_string());
+    }
+    let content = std::fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read skillbase.json: {}", e))?;
+    serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse skillbase.json: {}", e))
+}
+
+/// Simple semver range check: "^1.2.3" matches same major, ">=1.0.0" is >=, "*" matches all
+fn semver_matches(version: &Option<String>, range: &str) -> bool {
+    let version_str = match version {
+        Some(v) if !v.is_empty() => v.as_str(),
+        _ => return range == "*",
+    };
+
+    if range == "*" {
+        return true;
+    }
+
+    let parse_ver = |s: &str| -> Vec<u32> {
+        s.trim_start_matches('v')
+            .split('.')
+            .filter_map(|p| p.parse().ok())
+            .collect::<Vec<_>>()
+    };
+
+    let ver_parts = parse_ver(version_str);
+
+    if range.starts_with('^') {
+        let range_parts = parse_ver(&range[1..]);
+        if range_parts.is_empty() {
+            return true;
+        }
+        // ^major.minor.patch → same major, >= range
+        if ver_parts.is_empty() {
+            return false;
+        }
+        if ver_parts[0] != range_parts[0] {
+            return false;
+        }
+        // Must be >= range within the same major
+        for i in 1..range_parts.len().min(ver_parts.len()) {
+            if ver_parts[i] < range_parts[i] {
+                return false;
+            }
+            if ver_parts[i] > range_parts[i] {
+                return true;
+            }
+        }
+        true
+    } else if range.starts_with('~') {
+        let range_parts = parse_ver(&range[1..]);
+        if range_parts.is_empty() {
+            return true;
+        }
+        if ver_parts.is_empty() {
+            return false;
+        }
+        // ~major.minor.patch → same major.minor, >= range
+        if ver_parts.len() < 2 || range_parts.len() < 2 {
+            return ver_parts.get(0) == range_parts.get(0);
+        }
+        if ver_parts[0] != range_parts[0] || ver_parts[1] != range_parts[1] {
+            return false;
+        }
+        if ver_parts.len() >= 3 && range_parts.len() >= 3 && ver_parts[2] < range_parts[2] {
+            return false;
+        }
+        true
+    } else if range.starts_with(">=") {
+        let range_parts = parse_ver(&range[2..]);
+        if range_parts.is_empty() {
+            return true;
+        }
+        for i in 0..range_parts.len().min(ver_parts.len()) {
+            if ver_parts[i] > range_parts[i] {
+                return true;
+            }
+            if ver_parts[i] < range_parts[i] {
+                return false;
+            }
+        }
+        ver_parts.len() >= range_parts.len()
+    } else {
+        // Exact match
+        version_str == range
+    }
+}
+
+/// Parse a skill reference like "@author/name" or just "name" into (author, name)
+fn parse_skill_reference(reference: &str) -> (String, String) {
+    if let Some(stripped) = reference.strip_prefix('@') {
+        if let Some(slash_pos) = stripped.find('/') {
+            let author = &stripped[..slash_pos];
+            let name = &stripped[slash_pos + 1..];
+            return (author.to_string(), name.to_string());
+        }
+    }
+    (String::new(), reference.to_string())
+}
+
+/// Resolve all dependencies declared in a project's skillbase.json.
+/// `skill_dir` is the local skill directory (e.g. `{project}/.claude/skills`).
+/// `repos` is a list of (repo_id, cache_path) pairs.
+pub fn resolve_skillbase(
+    skill_dir: &str,
+    repos: &[(String, String)],
+) -> Result<SkillbaseResolution, String> {
+    let manifest = parse_skillbase_manifest(
+        Path::new(skill_dir)
+            .parent()
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_default()
+            .as_str(),
+    )?;
+
+    // Filter repos by manifest registry if specified
+    let filtered_repos: Vec<&(String, String)> = if let Some(ref registry_url) = manifest.registry
+    {
+        let matched: Vec<&(String, String)> = repos
+            .iter()
+            .filter(|(_, cache_path)| {
+                // Can't directly match URL from cache_path; use all repos
+                let _ = registry_url;
+                true
+            })
+            .collect();
+        if matched.is_empty() {
+            repos.iter().collect()
+        } else {
+            matched
+        }
+    } else {
+        repos.iter().collect()
+    };
+
+    // Build index of remote skills: name → (version, repo_id)
+    let mut remote_index: HashMap<String, (Option<String>, String)> = HashMap::new();
+    for (repo_id, cache_path) in &filtered_repos {
+        if let Ok(remote_result) = scan_remote_skills(cache_path, repo_id) {
+            for skill in remote_result.skills {
+                let version = skill.meta.as_ref().and_then(|m| m.version.clone());
+                remote_index
+                    .entry(skill.name.clone())
+                    .or_insert_with(|| (version, repo_id.clone()));
+            }
+        }
+    }
+
+    // Build index of local skills: name → version
+    let local_result = scan_skills(skill_dir, "", SkillScope::Global).unwrap_or_else(|_| ScanResult {
+        agent_id: String::new(),
+        scope: SkillScope::Global,
+        skills: Vec::new(),
+        total: 0,
+    });
+    let local_map: HashMap<String, Option<String>> = local_result
+        .skills
+        .iter()
+        .map(|s| (s.name.clone(), s.meta.as_ref().and_then(|m| m.version.clone())))
+        .collect();
+
+    let mut dependencies = Vec::new();
+    let mut satisfied_count = 0;
+    let mut missing_count = 0;
+    let mut mismatch_count = 0;
+    let mut outdated_count = 0;
+
+    for (reference, version_range) in &manifest.skills {
+        let (_author, skill_name) = parse_skill_reference(reference);
+        let installed_version = local_map.get(&skill_name).cloned().flatten();
+        let resolved_version = remote_index.get(&skill_name).map(|(v, _)| v.clone()).flatten();
+
+        let status = match (&installed_version, &resolved_version) {
+            (Some(_), _) if !semver_matches(&installed_version, version_range) => {
+                DependencyStatus::VersionMismatch
+            }
+            (Some(inst_v), Some(res_v))
+                if res_v != inst_v && semver_matches(&Some(res_v.clone()), version_range) =>
+            {
+                DependencyStatus::Outdated
+            }
+            (Some(_), _) => DependencyStatus::Satisfied,
+            (None, _) => DependencyStatus::Missing,
+        };
+
+        match &status {
+            DependencyStatus::Satisfied => satisfied_count += 1,
+            DependencyStatus::Missing => missing_count += 1,
+            DependencyStatus::VersionMismatch => mismatch_count += 1,
+            DependencyStatus::Outdated => outdated_count += 1,
+        }
+
+        dependencies.push(DependencyEntry {
+            reference: reference.clone(),
+            skill_name,
+            version_range: version_range.clone(),
+            resolved_version,
+            installed_version,
+            status,
+        });
+    }
+
+    let total_count = dependencies.len();
+    Ok(SkillbaseResolution {
+        manifest,
+        dependencies,
+        total_count,
+        satisfied_count,
+        missing_count,
+        mismatch_count,
+        outdated_count,
+    })
+}
+
+/// Sync skillbase dependencies: install missing/mismatched/outdated skills from repos.
+/// `skill_dir` is the local skill directory. `repos` is (repo_id, cache_path) pairs.
+pub fn sync_skillbase(
+    skill_dir: &str,
+    repos: &[(String, String)],
+) -> Result<Vec<SkillbaseSyncResult>, String> {
+    let resolution = resolve_skillbase(skill_dir, repos)?;
+
+    // Build remote skill lookup: name → (full_path, repo_id)
+    let mut remote_lookup: HashMap<String, (String, String)> = HashMap::new();
+    for (repo_id, cache_path) in repos {
+        if let Ok(remote_result) = scan_remote_skills(cache_path, repo_id) {
+            for skill in remote_result.skills {
+                remote_lookup
+                    .entry(skill.name.clone())
+                    .or_insert_with(|| (skill.path.clone(), repo_id.clone()));
+            }
+        }
+    }
+
+    let mut results = Vec::new();
+    for dep in &resolution.dependencies {
+        match dep.status {
+            DependencyStatus::Satisfied => {
+                results.push(SkillbaseSyncResult {
+                    reference: dep.reference.clone(),
+                    success: true,
+                    error: None,
+                });
+            }
+            DependencyStatus::Missing | DependencyStatus::VersionMismatch | DependencyStatus::Outdated => {
+                if let Some((remote_path, _repo_id)) = remote_lookup.get(&dep.skill_name) {
+                    let target_path = format!("{}/{}", skill_dir, dep.skill_name);
+
+                    // Remove existing if present
+                    let target = Path::new(&target_path);
+                    if target.exists() {
+                        let _ = uninstall_skill(&target_path);
+                    }
+
+                    match install_skill(remote_path, &target_path) {
+                        Ok(_) => results.push(SkillbaseSyncResult {
+                            reference: dep.reference.clone(),
+                            success: true,
+                            error: None,
+                        }),
+                        Err(e) => results.push(SkillbaseSyncResult {
+                            reference: dep.reference.clone(),
+                            success: false,
+                            error: Some(e),
+                        }),
+                    }
+                } else {
+                    results.push(SkillbaseSyncResult {
+                        reference: dep.reference.clone(),
+                        success: false,
+                        error: Some("Not found in any repo".to_string()),
+                    });
+                }
+            }
+        }
+    }
+
+    Ok(results)
+}
+
+/// Generate skillbase.json content from currently installed skills.
+pub fn generate_skillbase(
+    skill_dir: &str,
+    repos: &[(String, String)],
+) -> Result<String, String> {
+    let local_result = scan_skills(skill_dir, "", SkillScope::Global).unwrap_or_else(|_| ScanResult {
+        agent_id: String::new(),
+        scope: SkillScope::Global,
+        skills: Vec::new(),
+        total: 0,
+    });
+
+    let mut skills = HashMap::new();
+    for skill in &local_result.skills {
+        let author = skill
+            .meta
+            .as_ref()
+            .and_then(|m| m.author.as_deref())
+            .unwrap_or("local");
+        let version = skill
+            .meta
+            .as_ref()
+            .and_then(|m| m.version.as_deref())
+            .unwrap_or("*");
+        let version_range = if version == "*" {
+            "*".to_string()
+        } else {
+            format!("^{}", version)
+        };
+        skills.insert(format!("@{}/{}", author, skill.name), version_range);
+    }
+
+    // Pick registry URL from the repo with the most matching skills
+    let registry_url = if !local_result.skills.is_empty() {
+        let local_names: std::collections::HashSet<&str> =
+            local_result.skills.iter().map(|s| s.name.as_str()).collect();
+
+        repos
+            .iter()
+            .filter_map(|(repo_id, cache_path)| {
+                if let Ok(remote) = scan_remote_skills(cache_path, repo_id) {
+                    let remote_names: std::collections::HashSet<&str> =
+                        remote.skills.iter().map(|s| s.name.as_str()).collect();
+                    let match_count = local_names.intersection(&remote_names).count();
+                    if match_count > 0 {
+                        Some(match_count)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .max()
+            .and_then(|_| {
+                // Return first repo URL as registry hint (we don't have URL in repos tuple)
+                None
+            })
+    } else {
+        None
+    };
+
+    let project_name = Path::new(skill_dir)
+        .parent()
+        .and_then(|p| p.file_name())
+        .and_then(|n| n.to_str())
+        .unwrap_or("project")
+        .to_string();
+
+    let manifest = SkillbaseManifest {
+        schema_version: 1,
+        name: project_name,
+        version: "1.0.0".to_string(),
+        skills,
+        registry: registry_url,
+    };
+
+    serde_json::to_string_pretty(&manifest).map_err(|e| format!("Serialize: {}", e))
+}
+
+/// Write skillbase.json content to the project directory
+pub fn write_skillbase(project_path: &str, content: &str) -> Result<(), String> {
+    let path = Path::new(project_path).join("skillbase.json");
+    std::fs::write(&path, content)
+        .map_err(|e| format!("Failed to write skillbase.json: {}", e))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1068,5 +1442,29 @@ Some content here";
         assert_eq!(meta.version, Some("1.0.0".to_string()));
         assert_eq!(meta.author, Some("Test Author".to_string()));
         assert_eq!(meta.tags, vec!["test", "example"]);
+    }
+
+    #[test]
+    fn test_semver_matches() {
+        assert!(semver_matches(&Some("1.0.0".to_string()), "*"));
+        assert!(semver_matches(&Some("1.2.3".to_string()), "^1.0.0"));
+        assert!(!semver_matches(&Some("2.0.0".to_string()), "^1.0.0"));
+        assert!(semver_matches(&Some("1.2.3".to_string()), "~1.2.0"));
+        assert!(!semver_matches(&Some("1.3.0".to_string()), "~1.2.0"));
+        assert!(semver_matches(&Some("2.0.0".to_string()), ">=1.0.0"));
+        assert!(semver_matches(&Some("1.0.0".to_string()), "1.0.0"));
+        assert!(semver_matches(&None, "*"));
+    }
+
+    #[test]
+    fn test_parse_skill_reference() {
+        assert_eq!(
+            parse_skill_reference("@author/my-skill"),
+            ("author".to_string(), "my-skill".to_string())
+        );
+        assert_eq!(
+            parse_skill_reference("my-skill"),
+            (String::new(), "my-skill".to_string())
+        );
     }
 }

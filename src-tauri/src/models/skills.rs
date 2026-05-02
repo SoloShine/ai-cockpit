@@ -270,3 +270,71 @@ pub struct MigrateFailedItem {
     pub name: String,
     pub error: String,
 }
+
+// --- Skillbase dependency management ---
+
+/// Root of a skillbase.json manifest
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillbaseManifest {
+    #[serde(rename = "schemaVersion")]
+    pub schema_version: u32,
+    pub name: String,
+    #[serde(default)]
+    pub version: String,
+    /// Map of skill reference → version range (e.g. "@author/name" → "^1.0.0")
+    #[serde(default)]
+    pub skills: HashMap<String, String>,
+    /// Optional registry URL to filter repos
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub registry: Option<String>,
+}
+
+/// Status of a single dependency resolution
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum DependencyStatus {
+    Satisfied,
+    Missing,
+    VersionMismatch,
+    Outdated,
+}
+
+/// A single resolved dependency entry
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DependencyEntry {
+    pub reference: String,
+    pub skill_name: String,
+    pub version_range: String,
+    /// Version of the resolved remote skill (if found)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resolved_version: Option<String>,
+    /// Version of the locally installed skill (if any)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub installed_version: Option<String>,
+    pub status: DependencyStatus,
+}
+
+/// Complete resolution result for a skillbase.json
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillbaseResolution {
+    pub manifest: SkillbaseManifest,
+    pub dependencies: Vec<DependencyEntry>,
+    pub total_count: usize,
+    pub satisfied_count: usize,
+    pub missing_count: usize,
+    pub mismatch_count: usize,
+    pub outdated_count: usize,
+}
+
+/// Result of syncing skillbase dependencies
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillbaseSyncResult {
+    pub reference: String,
+    pub success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}

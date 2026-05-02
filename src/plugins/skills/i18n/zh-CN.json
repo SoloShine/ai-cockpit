@@ -218,6 +218,28 @@
       "field": "字段",
       "type": "类型",
       "description": "说明"
+    },
+    "skillbase": {
+      "title": "Skillbase 依赖",
+      "manifest": "清单",
+      "satisfied": "已满足",
+      "missing": "缺失",
+      "mismatch": "不匹配",
+      "outdated": "可更新",
+      "versionMismatch": "版本不匹配",
+      "syncDeps": "同步依赖",
+      "syncing": "同步中...",
+      "regenerate": "重新生成",
+      "regenerateConfirm": "确定要重新生成 skillbase.json 吗？将覆盖当前文件。",
+      "generating": "生成中...",
+      "noDependencies": "没有依赖声明",
+      "syncSuccess": "依赖同步完成",
+      "syncPartial": "同步完成：{success} 成功，{failed} 失败",
+      "generateSuccess": "skillbase.json 已重新生成",
+      "loadFailed": "加载依赖信息失败",
+      "notFound": "未找到 skillbase.json",
+      "showSkillbase": "依赖管理",
+      "hideSkillbase": "隐藏依赖"
     }
   }
 }

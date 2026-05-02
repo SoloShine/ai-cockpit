@@ -17,6 +17,8 @@ import type {
   ConflictResolution,
   MigrateResult,
   ProjectOverview,
+  SkillbaseResolution,
+  SkillbaseSyncResult,
 } from "./types";
 
 const PROJECT_PATHS_KEY = "skills_project_paths";
@@ -56,6 +58,11 @@ export const useSkillsStore = defineStore("skills", () => {
   const showMigrateDialog = ref(false);
   const migrateSkills = ref<MigrateSkillItem[]>([]);
   const migrating = ref(false);
+
+  // Skillbase state
+  const skillbase = ref<SkillbaseResolution | null>(null);
+  const skillbaseSyncing = ref(false);
+  const showSkillbasePanel = ref(false);
 
   // Projects overview state
   const projectsOverview = ref<ProjectOverview[]>([]);
@@ -448,6 +455,49 @@ export const useSkillsStore = defineStore("skills", () => {
     migrateSkills.value = [];
   }
 
+  // --- Skillbase ---
+
+  async function loadSkillbase(skillDir: string): Promise<void> {
+    const settingsStore = useSettingsStore();
+    try {
+      skillbase.value = await invoke<SkillbaseResolution>("get_skillbase_resolution", {
+        skillDir,
+        repos: settingsStore.repos,
+      });
+    } catch (e) {
+      console.error("[SkillsStore] Failed to load skillbase:", e);
+      skillbase.value = null;
+    }
+  }
+
+  async function syncSkillbaseDeps(skillDir: string): Promise<SkillbaseSyncResult[]> {
+    const settingsStore = useSettingsStore();
+    skillbaseSyncing.value = true;
+    try {
+      const results = await invoke<SkillbaseSyncResult[]>("sync_skillbase_dependencies", {
+        skillDir,
+        repos: settingsStore.repos,
+      });
+      await loadSkillbase(skillDir);
+      await loadComparisons();
+      return results;
+    } finally {
+      skillbaseSyncing.value = false;
+    }
+  }
+
+  async function generateSkillbaseJson(skillDir: string): Promise<string> {
+    const settingsStore = useSettingsStore();
+    return invoke<string>("generate_skillbase_json", {
+      skillDir,
+      repos: settingsStore.repos,
+    });
+  }
+
+  async function writeSkillbaseJson(projectPath: string, content: string): Promise<void> {
+    await invoke("write_skillbase_json", { projectPath, content });
+  }
+
   // --- Projects Overview ---
 
   async function loadProjectsOverview(): Promise<void> {
@@ -543,5 +593,14 @@ export const useSkillsStore = defineStore("skills", () => {
     projectsOverview,
     loadingProjects,
     loadProjectsOverview,
+
+    // Skillbase
+    skillbase,
+    skillbaseSyncing,
+    showSkillbasePanel,
+    loadSkillbase,
+    syncSkillbaseDeps,
+    generateSkillbaseJson,
+    writeSkillbaseJson,
   };
 });
