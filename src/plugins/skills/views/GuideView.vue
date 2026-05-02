@@ -122,17 +122,6 @@ async function copyCode(text: string, index: number) {
   }
 }
 
-function highlight(code: string, lang: string): string {
-  try {
-    if (hljs.getLanguage(lang)) {
-      return hljs.highlight(code, { language: lang }).value
-    }
-    return hljs.highlightAuto(code).value
-  } catch {
-    return code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  }
-}
-
 // --- Static content data ---
 
 const directoryExample = `my-skill/
@@ -359,7 +348,7 @@ Assistant: I will deploy to production. Let me verify the prerequisites first.
                 </template>
                 {{ copiedIndex === 0 ? t('skills.guide.copied') : t('skills.guide.copyCode') }}
               </n-button>
-              <n-code :code="highlight(directoryExample, 'bash')" language="bash" :word-wrap="true" />
+              <n-code :code="directoryExample" language="bash" :hljs="hljs" :word-wrap="true" />
             </div>
             <n-text depth="3">
               SKILL.md 是唯一必需的文件，其余为可选内容。
@@ -434,7 +423,7 @@ Assistant: I will deploy to production. Let me verify the prerequisites first.
                 </template>
                 {{ copiedIndex === 1 ? t('skills.guide.copied') : t('skills.guide.copyCode') }}
               </n-button>
-              <n-code :code="highlight(triggerExample, 'yaml')" language="yaml" :word-wrap="true" />
+              <n-code :code="triggerExample" language="yaml" :hljs="hljs" :word-wrap="true" />
             </div>
           </section>
 
@@ -484,7 +473,7 @@ Assistant: I will deploy to production. Let me verify the prerequisites first.
                 </template>
                 {{ copiedIndex === 2 ? t('skills.guide.copied') : t('skills.guide.copyCode') }}
               </n-button>
-              <n-code :code="highlight(securityExample, 'yaml')" language="yaml" :word-wrap="true" />
+              <n-code :code="securityExample" language="yaml" :hljs="hljs" :word-wrap="true" />
             </div>
           </section>
 
@@ -509,7 +498,7 @@ Assistant: I will deploy to production. Let me verify the prerequisites first.
                 </template>
                 {{ copiedIndex === 3 ? t('skills.guide.copied') : t('skills.guide.copyCode') }}
               </n-button>
-              <n-code :code="highlight(dependenciesExample, 'yaml')" language="yaml" :word-wrap="true" />
+              <n-code :code="dependenciesExample" language="yaml" :hljs="hljs" :word-wrap="true" />
             </div>
             <n-h4>skillbase.json</n-h4>
             <n-text>
@@ -527,7 +516,7 @@ Assistant: I will deploy to production. Let me verify the prerequisites first.
                 </template>
                 {{ copiedIndex === 4 ? t('skills.guide.copied') : t('skills.guide.copyCode') }}
               </n-button>
-              <n-code :code="highlight(skillbaseExample, 'json')" language="json" :word-wrap="true" />
+              <n-code :code="skillbaseExample" language="json" :hljs="hljs" :word-wrap="true" />
             </div>
           </section>
 
@@ -564,7 +553,7 @@ Assistant: I will deploy to production. Let me verify the prerequisites first.
                 </template>
                 {{ copiedIndex === 5 ? t('skills.guide.copied') : t('skills.guide.copyCode') }}
               </n-button>
-              <n-code :code="highlight(bodyExample, 'markdown')" language="markdown" :word-wrap="true" />
+              <n-code :code="bodyExample" language="markdown" :hljs="hljs" :word-wrap="true" />
             </div>
           </section>
 
@@ -588,7 +577,7 @@ Assistant: I will deploy to production. Let me verify the prerequisites first.
                 </template>
                 {{ copiedIndex === 6 ? t('skills.guide.copied') : t('skills.guide.copyCode') }}
               </n-button>
-              <n-code :code="highlight(fullExample, 'yaml')" language="yaml" :word-wrap="true" />
+              <n-code :code="fullExample" language="yaml" :hljs="hljs" :word-wrap="true" />
             </div>
           </section>
 

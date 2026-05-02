@@ -24,16 +24,17 @@ const previewSkillPath = ref("");
 const previewSkillName = ref("");
 
 onMounted(() => {
-  store.loadComparisons("global");
+  store.currentScope = "global";
+  store.loadComparisons();
 });
 
 watch(() => store.currentAgentId, () => {
-  store.loadComparisons("global");
+  store.loadComparisons();
 });
 
 function handleSync() {
   settingsStore.syncAllRepos().then(() => {
-    store.loadComparisons("global");
+    store.loadComparisons();
   });
 }
 

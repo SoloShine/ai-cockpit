@@ -94,6 +94,7 @@
     "confirm": {
       "uninstall": "确认卸载",
       "uninstallMsg": "确定要卸载 Skill \"{name}\" 吗？此操作不可恢复。",
+      "cancel": "取消",
       "batchUninstall": "确认批量卸载",
       "batchUninstallMsg": "确定要卸载选中的 {count} 个 Skill 吗？"
     },

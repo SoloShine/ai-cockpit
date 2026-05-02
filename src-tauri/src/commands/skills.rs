@@ -139,6 +139,7 @@ pub async fn install_skill(
     source: String,
     target_path: String,
 ) -> Result<OperationResult, String> {
+    let target_path = expand_path(&target_path);
     let result = skills_service::install_skill(&source, &target_path)?;
     // Record in operation history
     let skill_name = Path::new(&target_path)
@@ -162,6 +163,7 @@ pub async fn update_skill(
     source: String,
     target_path: String,
 ) -> Result<OperationResult, String> {
+    let target_path = expand_path(&target_path);
     let skill_name = Path::new(&target_path)
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
@@ -181,6 +183,7 @@ pub async fn update_skill(
 /// Uninstall a skill
 #[tauri::command]
 pub async fn uninstall_skill(skill_path: String) -> Result<OperationResult, String> {
+    let skill_path = expand_path(&skill_path);
     let skill_name = Path::new(&skill_path)
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
@@ -200,8 +203,12 @@ pub async fn uninstall_skill(skill_path: String) -> Result<OperationResult, Stri
 /// Batch operate on multiple skills
 #[tauri::command]
 pub async fn batch_operate(
-    operations: Vec<SkillOperation>,
+    mut operations: Vec<SkillOperation>,
 ) -> Vec<OperationResult> {
+    // Expand ~ in target paths
+    for op in &mut operations {
+        op.target_path = expand_path(&op.target_path);
+    }
     skills_service::batch_operate(operations)
 }
 

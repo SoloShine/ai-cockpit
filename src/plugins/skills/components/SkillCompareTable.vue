@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { invoke } from "@tauri-apps/api/core";
 import {
   NDataTable,
   type DataTableColumns,
@@ -54,12 +53,6 @@ function resizableHeader(key: string, titleText: string) {
       }),
     ],
   );
-}
-
-// Helper to get home directory
-async function getHome(): Promise<string> {
-  const dataDir = await invoke<string>("get_data_dir");
-  return dataDir + "/..";
 }
 
 // Get status tag type and color
@@ -233,14 +226,15 @@ const columns = computed<DataTableColumns<SkillComparison>>(() => [
         );
       }
 
-      // Preview button for any row with remote
-      if (row.remote) {
+      // Preview button — prefer local if available, otherwise remote
+      const previewPath = row.local?.path || row.remote?.path;
+      if (previewPath) {
         buttons.push(
           h(
             NButton,
             {
               size: "small",
-              onClick: () => emit("preview", row.remote!.path, row.name),
+              onClick: () => emit("preview", previewPath, row.name),
             },
             { default: () => t("skills.compare.preview") }
           )
@@ -258,12 +252,9 @@ async function handleInstall(row: SkillComparison) {
 
   operatingKeys.value.add(row.name);
   try {
-    const agentConfig = store.getCurrentAgentConfig();
-    if (!agentConfig) return;
-
-    const home = await getHome();
-    const globalPath = agentConfig.globalPath.replace("~", home);
-    const targetPath = `${globalPath}/skills/${row.name}`;
+    const localDir = store.resolveLocalDir(store.currentScope);
+    if (!localDir) return;
+    const targetPath = `${localDir}/${row.name}`;
 
     await store.installSkill(row.remote.path, targetPath);
     await store.loadComparisons();
@@ -321,21 +312,16 @@ const canBatchUpdate = computed(() => {
 
 async function handleBatchInstall() {
   const operations: SkillOperation[] = [];
+  const localDir = store.resolveLocalDir(store.currentScope);
+  if (!localDir) return;
 
   for (const key of checkedRowKeys.value) {
     const row = store.comparisons.find((r) => r.name === key);
     if (row?.status === "remoteOnly" && row.remote?.path) {
-      const agentConfig = store.getCurrentAgentConfig();
-      if (!agentConfig) continue;
-
-      const home = await getHome();
-      const globalPath = agentConfig.globalPath.replace("~", home);
-      const targetPath = `${globalPath}/skills/${row.name}`;
-
       operations.push({
         operationType: "install",
         source: row.remote.path,
-        targetPath,
+        targetPath: `${localDir}/${row.name}`,
       });
     }
   }

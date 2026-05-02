@@ -94,6 +94,7 @@
     "confirm": {
       "uninstall": "Confirm Uninstall",
       "uninstallMsg": "Are you sure you want to uninstall skill \"{name}\"? This cannot be undone.",
+      "cancel": "Cancel",
       "batchUninstall": "Confirm Batch Uninstall",
       "batchUninstallMsg": "Are you sure you want to uninstall {count} selected skills?"
     },

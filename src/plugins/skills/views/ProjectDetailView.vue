@@ -35,13 +35,17 @@ const previewSkillName = ref("");
 
 onMounted(() => {
   if (projectPath.value) {
-    store.loadComparisons("project", projectPath.value);
+    // Set store scope so SkillCompareTable operations (install/update/etc.)
+    // resolve to the correct project directory
+    store.currentScope = "project";
+    store.currentProjectPath = projectPath.value;
+    store.loadComparisons();
   }
 });
 
 watch(() => store.currentAgentId, () => {
   if (projectPath.value) {
-    store.loadComparisons("project", projectPath.value);
+    store.loadComparisons();
   }
 });
 
