@@ -216,8 +216,8 @@ const columns = computed<DataTableColumns<SkillComparison>>(() => [
         );
       }
 
-      // Uninstall button for localOnly
-      if (row.status === "localOnly" && row.local) {
+      // Uninstall button for any skill that exists locally
+      if (row.local) {
         buttons.push(
           h(
             NButton,
