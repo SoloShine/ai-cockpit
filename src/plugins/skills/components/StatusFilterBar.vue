@@ -24,7 +24,7 @@ function toggle(status: FilterValue) {
 </script>
 
 <template>
-  <NSpace :size="4" v-if="store.comparisons.length > 0" align="center">
+  <NSpace :size="4" v-if="store.comparisons.length > 0" align="center" data-testid="status-filter-bar">
     <button
       v-for="chip in chips"
       :key="String(chip.status)"

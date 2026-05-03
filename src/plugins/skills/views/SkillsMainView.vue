@@ -96,6 +96,7 @@ function handlePreview(skillPath: string, skillName: string) {
           ref="searchInputRef"
           v-model:value="store.searchText"
           :placeholder="t('skills.filter.search')"
+          data-testid="search-input"
           clearable
           style="width: 220px"
         >
