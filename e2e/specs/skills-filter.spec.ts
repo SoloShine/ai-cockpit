@@ -67,9 +67,11 @@ describe("Skills Search and Filter", () => {
       await searchInput.setValue("zzz-no-match");
       await browser.pause(500);
 
-      // Clear
-      await searchInput.clearValue();
-      await browser.pause(500);
+      // Clear using keyboard (setValue("") doesn't trigger v-model in WebView2)
+      await searchInput.click();
+      await browser.keys(["Control", "a"]);
+      await browser.keys(["Backspace"]);
+      await browser.pause(800);
 
       const rowsAfter = (await $$(".n-data-table tbody tr")).length;
       expect(rowsAfter).toBe(rowsBefore);
