@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, h } from "vue";
+import { ref, computed, h, onMounted, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   NDataTable,
@@ -11,12 +11,16 @@ import {
   NText,
   NAlert,
   NEmpty,
+  NInput,
+  NIcon,
   useDialog,
   type DataTableRowKey,
 } from "naive-ui";
+import { SearchOutline } from "@vicons/ionicons5";
 import { useSkillsStore } from "../store";
 import { useSettingsStore } from "@/plugins/settings/store";
 import { useColumnResize } from "../composables/useColumnResize";
+import StatusFilterBar from "./StatusFilterBar.vue";
 import type { SkillComparison, SkillOperation, ComparisonStatus } from "../types";
 
 const emit = defineEmits<{
@@ -31,6 +35,24 @@ const settingsStore = useSettingsStore();
 
 const checkedRowKeys = ref<DataTableRowKey[]>([]);
 const operatingKeys = ref<Set<string>>(new Set());
+
+const searchInputRef = ref<InstanceType<typeof NInput> | null>(null);
+
+function handleSearchShortcut(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+    e.preventDefault();
+    const el = searchInputRef.value?.$el as HTMLElement | undefined;
+    el?.querySelector("input")?.focus();
+  }
+}
+
+onMounted(() => {
+  document.addEventListener("keydown", handleSearchShortcut);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("keydown", handleSearchShortcut);
+});
 
 // Column resize support
 const { getColumnWidth, handleResizeMousedown } = useColumnResize(
@@ -365,13 +387,29 @@ async function handleBatchUpdate() {
       {{ store.error }}
     </n-alert>
 
+    <NSpace v-if="store.comparisons.length > 0" align="center" justify="space-between" style="margin-bottom: 8px">
+      <StatusFilterBar />
+      <NInput
+        ref="searchInputRef"
+        v-model:value="store.searchText"
+        :placeholder="t('skills.filter.search')"
+        data-testid="search-input"
+        clearable
+        style="width: 220px"
+      >
+        <template #prefix>
+          <NIcon :component="SearchOutline" />
+        </template>
+      </NInput>
+    </NSpace>
+
     <n-empty
-      v-if="!store.loading && store.comparisons.length === 0 && !store.error"
-      :description="t('skills.compare.empty')"
+      v-if="!store.loading && store.filteredComparisons.length === 0 && !store.error"
+      :description="store.searchText || store.statusFilter ? t('skills.filter.noResults') : t('skills.compare.empty')"
       style="padding: 40px 0"
     />
 
-    <template v-if="store.comparisons.length > 0 || store.loading">
+    <template v-if="store.filteredComparisons.length > 0 || store.loading">
     <n-space v-if="canBatchInstall || canBatchUpdate" :mb="3">
       <n-button
         v-if="canBatchInstall"
@@ -393,7 +431,7 @@ async function handleBatchUpdate() {
 
     <n-data-table
       :columns="columns"
-      :data="store.comparisons"
+      :data="store.filteredComparisons"
       :row-key="(row: SkillComparison) => row.name"
       :checked-row-keys="checkedRowKeys"
       :max-height="600"
