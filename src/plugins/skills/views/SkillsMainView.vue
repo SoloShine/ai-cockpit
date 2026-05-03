@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
-import { NSpace, NText, NButton, NIcon } from "naive-ui";
+import { ref, onMounted, onUnmounted, watch } from "vue";
+import { NSpace, NText, NButton, NIcon, NInput } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { useSkillsStore } from "../store";
 import AgentSelect from "../components/AgentSelect.vue";
@@ -9,7 +9,8 @@ import SkillDiffViewer from "../components/SkillDiffViewer.vue";
 import SkillPreviewModal from "../components/SkillPreviewModal.vue";
 import OperationHistoryPanel from "../components/OperationHistoryPanel.vue";
 import MigrateDialog from "../components/MigrateDialog.vue";
-import { SyncOutline, TimeOutline, SwapHorizontalOutline } from "@vicons/ionicons5";
+import StatusFilterBar from "../components/StatusFilterBar.vue";
+import { SyncOutline, TimeOutline, SwapHorizontalOutline, SearchOutline } from "@vicons/ionicons5";
 import { useSettingsStore } from "@/plugins/settings/store";
 
 const { t } = useI18n();
@@ -23,9 +24,24 @@ const showPreview = ref(false);
 const previewSkillPath = ref("");
 const previewSkillName = ref("");
 
+const searchInputRef = ref<InstanceType<typeof NInput> | null>(null);
+
+function handleKeydown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+    e.preventDefault();
+    const el = searchInputRef.value?.$el as HTMLElement | undefined;
+    el?.querySelector("input")?.focus();
+  }
+}
+
 onMounted(() => {
+  document.addEventListener("keydown", handleKeydown);
   store.currentScope = "global";
   store.loadComparisons();
+});
+
+onUnmounted(() => {
+  document.removeEventListener("keydown", handleKeydown);
 });
 
 watch(() => store.currentAgentId, () => {
@@ -73,6 +89,21 @@ function handlePreview(skillPath: string, skillName: string) {
       </NSpace>
 
       <AgentSelect />
+
+      <NSpace align="center" justify="space-between" style="width: 100%">
+        <StatusFilterBar />
+        <NInput
+          ref="searchInputRef"
+          v-model:value="store.searchText"
+          :placeholder="t('skills.filter.search')"
+          clearable
+          style="width: 220px"
+        >
+          <template #prefix>
+            <NIcon :component="SearchOutline" />
+          </template>
+        </NInput>
+      </NSpace>
 
       <SkillCompareTable @diff="handleDiff" @preview="handlePreview" />
     </NSpace>
