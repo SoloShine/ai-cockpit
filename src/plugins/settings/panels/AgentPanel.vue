@@ -32,13 +32,15 @@ function handleDeleteAgent(id: string) {
       </NButton>
     </NSpace>
 
-    <AgentCard
-      v-for="agent in store.agents"
-      :key="agent.id"
-      :agent="agent"
-      @update:agent="handleUpdateAgent(agent.id, $event)"
-      @delete="handleDeleteAgent(agent.id)"
-    />
+    <div class="agent-grid">
+      <AgentCard
+        v-for="agent in store.agents"
+        :key="agent.id"
+        :agent="agent"
+        @update:agent="handleUpdateAgent(agent.id, $event)"
+        @delete="handleDeleteAgent(agent.id)"
+      />
+    </div>
 
     <AddAgentDialog
       :show="showAddDialog"
@@ -47,3 +49,11 @@ function handleDeleteAgent(id: string) {
     />
   </div>
 </template>
+
+<style scoped>
+.agent-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+</style>

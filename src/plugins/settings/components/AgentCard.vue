@@ -12,7 +12,7 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <NCard size="small" style="margin-bottom: 12px">
+  <NCard size="small">
     <template #header>
       <NSpace align="center">
         <span>{{ agent.name }}</span>
