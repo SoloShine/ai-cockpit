@@ -366,12 +366,12 @@ async function handleBatchUpdate() {
     </n-alert>
 
     <n-empty
-      v-if="!store.loading && store.comparisons.length === 0 && !store.error"
-      :description="t('skills.compare.empty')"
+      v-if="!store.loading && store.filteredComparisons.length === 0 && !store.error"
+      :description="store.searchText || store.statusFilter ? t('skills.filter.noResults') : t('skills.compare.empty')"
       style="padding: 40px 0"
     />
 
-    <template v-if="store.comparisons.length > 0 || store.loading">
+    <template v-if="store.filteredComparisons.length > 0 || store.loading">
     <n-space v-if="canBatchInstall || canBatchUpdate" :mb="3">
       <n-button
         v-if="canBatchInstall"
@@ -393,7 +393,7 @@ async function handleBatchUpdate() {
 
     <n-data-table
       :columns="columns"
-      :data="store.comparisons"
+      :data="store.filteredComparisons"
       :row-key="(row: SkillComparison) => row.name"
       :checked-row-keys="checkedRowKeys"
       :max-height="600"
