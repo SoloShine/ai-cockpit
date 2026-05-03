@@ -19,6 +19,7 @@ import type {
   ProjectOverview,
   SkillbaseResolution,
   SkillbaseSyncResult,
+  ComparisonStatus,
 } from "./types";
 
 const PROJECT_PATHS_KEY = "skills_project_paths";
@@ -68,6 +69,10 @@ export const useSkillsStore = defineStore("skills", () => {
   const projectsOverview = ref<ProjectOverview[]>([]);
   const loadingProjects = ref(false);
 
+  // Filter state
+  const searchText = ref("");
+  const statusFilter = ref<ComparisonStatus | null>(null);
+
   // Computed
   const currentSkills = computed<SkillInfo[]>(() => {
     const skillsMap =
@@ -87,6 +92,25 @@ export const useSkillsStore = defineStore("skills", () => {
       counts[c.status]++;
     }
     return counts;
+  });
+
+  const filteredComparisons = computed(() => {
+    let result = comparisons.value;
+
+    if (statusFilter.value) {
+      result = result.filter((c) => c.status === statusFilter.value);
+    }
+
+    const q = searchText.value.trim().toLowerCase();
+    if (q) {
+      result = result.filter((c) => {
+        const meta = c.local?.meta || c.remote?.meta;
+        const displayName = meta?.name || c.name;
+        return displayName.toLowerCase().includes(q);
+      });
+    }
+
+    return result;
   });
 
   // Methods
@@ -574,6 +598,11 @@ export const useSkillsStore = defineStore("skills", () => {
     loadSkillDiff,
     loadDiffFileContent,
     clearDiff,
+
+    // Filter
+    searchText,
+    statusFilter,
+    filteredComparisons,
 
     // History
     operationHistory,
