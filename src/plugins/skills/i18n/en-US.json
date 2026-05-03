@@ -240,6 +240,16 @@
       "notFound": "skillbase.json not found",
       "showSkillbase": "Dependencies",
       "hideSkillbase": "Hide Dependencies"
+    },
+    "filter": {
+      "search": "Search skills...",
+      "all": "All",
+      "same": "Same",
+      "outdated": "Outdated",
+      "localOnly": "Local Only",
+      "remoteOnly": "Remote Only",
+      "clearFilter": "Clear Filter",
+      "noResults": "No matching skills"
     }
   }
 }
